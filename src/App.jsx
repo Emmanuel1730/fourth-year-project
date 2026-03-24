@@ -11,6 +11,7 @@ import RequestsPage from "./components/Request";
 import Schools from "./components/User/Schools";
 import Students from "./components/User/Students";
 import Teachers from "./components/User/Schools";
+import DashboardOverview from "./components/dashboard";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,7 +31,7 @@ function App() {
         <Header />
         <div className="p-6">
           <Routes>
-            <Route path="/" element={<h1>Dashboard</h1>} />
+            <Route path="/" element={<DashboardOverview />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/quizzes" element={<Quizzes />} />

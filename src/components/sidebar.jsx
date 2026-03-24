@@ -54,11 +54,11 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* ✅ SCROLLABLE AREA */}
+      
       <div className="flex-1 overflow-y-auto min-h-0 px-3 py-4 space-y-2">
         
         <div className="text-[10px] text-[#6e7681] uppercase px-2 mt-2">
-          Overview
+         
         </div>
         {menuItem("/", "🏠", "Dashboard")}
 
@@ -82,7 +82,7 @@ const Sidebar = () => {
         <div className="text-[10px] text-[#6e7681] uppercase px-2 mt-4">
           System
         </div>
-        {menuItem("/reports", "📊", "Reports")}
+         
         {menuItem("/requests", "🔔", "Requests", { value: 5 })}
         {menuItem("/settings", "⚙️", "Settings")}
       </div>

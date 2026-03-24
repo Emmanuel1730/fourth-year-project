@@ -43,7 +43,7 @@ const Login = ({ onLogin }) => {
                 <img 
                   src={logo} 
                   alt="EduLib Logo" 
-                  className="w-8 h-8 object-contain filter brightness-0 invert"
+                   
                 />
               </div>
               <div>
