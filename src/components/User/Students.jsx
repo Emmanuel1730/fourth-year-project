@@ -1,280 +1,275 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react'
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 const Students = () => {
-  // Sample data based on the image
-  const initialStudents = [
-    {
-      id: 1,
-      name: 'Grace Chikwanda',
-      school: 'Blantyre Secondary',
-      form: 'Form 4',
-      downloads: 34,
-      lastActive: 'Today',
-      status: 'Active',
-    },
-    {
-      id: 2,
-      name: 'Kondwani Mwale',
-      school: 'Kamuzu Academy',
-      form: 'Form 3',
-      downloads: 22,
-      lastActive: 'Yesterday',
-      status: 'Active',
-    },
-    {
-      id: 3,
-      name: 'Thandiwe Phiri',
-      school: "St. Patrick's",
-      form: 'Form 2',
-      downloads: 7,
-      lastActive: 'Mar 10',
-      status: 'Inactive',
-    },
-    {
-      id: 4,
-      name: 'Daniel Tembo',
-      school: 'Lilongwe Sec.',
-      form: 'Form 1',
-      downloads: 0,
-      lastActive: 'Never',
-      status: 'Suspended',
-    },
-  ];
+  const [students, setStudents]         = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState(null)
+  const [searchTerm, setSearchTerm]     = useState('')
+  const [formFilter, setFormFilter]     = useState('All Forms')
+  const [statusFilter, setStatusFilter] = useState('All Status')
+  const [showModal, setShowModal]       = useState(false)
+  const [schools, setSchools]           = useState([])
+  const [formData, setFormData]         = useState({
+    firstName: '', lastName: '', email: '', password: '',
+    libraryCardNumber: '', schoolId: '', bio: '', age: '',
+  })
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError]     = useState(null)
+  const [formSuccess, setFormSuccess] = useState(null)
 
-  const [students] = useState(initialStudents);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [formFilter, setFormFilter] = useState('All Forms');
-  const [statusFilter, setStatusFilter] = useState('All Status');
+  const token = localStorage.getItem('accessToken')
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 
-  // Get unique forms and statuses for filter dropdowns
-  const forms = ['All Forms', ...new Set(students.map((s) => s.form))];
-  const statuses = ['All Status', ...new Set(students.map((s) => s.status))];
-
-  // Filter students based on search, form, and status
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.school.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesForm = formFilter === 'All Forms' || student.form === formFilter;
-    const matchesStatus = statusFilter === 'All Status' || student.status === statusFilter;
-
-    return matchesSearch && matchesForm && matchesStatus;
-  });
-
-  // Handlers
-  const handleSearchChange = (e) => setSearchTerm(e.target.value);
-  const handleFormChange = (e) => setFormFilter(e.target.value);
-  const handleStatusChange = (e) => setStatusFilter(e.target.value);
-  const handleView = (studentName) => alert(`View details for: ${studentName}`);
-  const handleReinstate = (studentName) => alert(`Reinstate student: ${studentName}`);
-  const handleAddStudent = () => alert('Add new student');
-
-  // Helper to get status badge styling
-  const getStatusBadge = (status) => {
-    const baseClasses = 'px-2 py-1 text-xs font-medium rounded-full';
-    switch (status) {
-      case 'Active':
-        return `${baseClasses}`;
-      case 'Inactive':
-        return `${baseClasses}`;
-      case 'Suspended':
-        return `${baseClasses}`;
-      default:
-        return `${baseClasses}`;
+  const fetchStudents = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch(`${API_BASE}/profiles`, { headers })
+      if (!res.ok) throw new Error(`Failed to fetch profiles: ${res.status}`)
+      const data = await res.json()
+      setStudents(data.filter((p) => p.role === 'STUDENT'))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active':
-        return { bg: '#2ea04320', text: '#2ea043' };
-      case 'Inactive':
-        return { bg: '#6e768120', text: '#8b949e' };
-      case 'Suspended':
-        return { bg: '#da363320', text: '#da3633' };
-      default:
-        return { bg: '#6e768120', text: '#8b949e' };
+  useEffect(() => {
+    fetchStudents()
+    fetch(`${API_BASE}/school`, { headers })
+      .then((r) => r.json())
+      .then((data) => setSchools(Array.isArray(data) ? data : []))
+      .catch(() => setSchools([]))
+  }, [])
+
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+    setFormError(null)
+  }
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault()
+    setFormError(null)
+    setFormSuccess(null)
+    if (!formData.firstName || !formData.lastName || !formData.email ||
+        !formData.password || !formData.libraryCardNumber) {
+      setFormError('Please fill in all required fields.')
+      return
     }
-  };
+    setFormLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/profiles`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...formData,
+          role: 'STUDENT',
+          age: formData.age ? parseInt(formData.age) : undefined,
+          schoolId: formData.schoolId || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.message ?? `Request failed with status ${res.status}`)
+      }
+      setFormSuccess('Student added successfully!')
+      setFormData({ firstName: '', lastName: '', email: '', password: '', libraryCardNumber: '', schoolId: '', bio: '', age: '' })
+      await fetchStudents()
+      setTimeout(() => { setShowModal(false); setFormSuccess(null) }, 1500)
+    } catch (err) {
+      setFormError(err.message)
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  const forms    = ['All Forms', ...new Set(students.map((s) => s.school?.name ?? 'N/A'))]
+  const statuses = ['All Status', 'Active', 'Inactive']
+
+  const filteredStudents = students.filter((s) => {
+    const fullName = `${s.firstName} ${s.lastName}`.toLowerCase()
+    const school   = s.school?.name?.toLowerCase() ?? ''
+    return (
+      (fullName.includes(searchTerm.toLowerCase()) || school.includes(searchTerm.toLowerCase())) &&
+      (formFilter === 'All Forms' || (s.school?.name ?? 'N/A') === formFilter) &&
+      (statusFilter === 'All Status' || (statusFilter === 'Active' ? s.isActive : !s.isActive))
+    )
+  })
+
+  const statusColor = (isActive) => isActive
+    ? { bg: '#2ea04320', text: '#2ea043', label: 'Active' }
+    : { bg: '#6e768120', text: '#8b949e', label: 'Inactive' }
+
+  const formatDate = (d) => {
+    if (!d) return 'Never'
+    const date = new Date(d), today = new Date()
+    const diff = Math.floor((today - date) / 86400000)
+    if (diff === 0) return 'Today'
+    if (diff === 1) return 'Yesterday'
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
+  const inputStyle = {
+    width: '100%', backgroundColor: '#1c2330', border: '1px solid #21262d',
+    borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#e6edf3', outline: 'none',
+  }
 
   return (
     <div className="p-6 min-h-screen font-sans" style={{ backgroundColor: '#0d1117' }}>
-      {/* Top bar: Search + Filters + Add Student Button */}
+
+      {/* Top bar */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        {/* Search input */}
-        <input
-          type="text"
-          placeholder="Search students by name, school..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="flex-1 min-w-[250px] px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
+        <input type="text" placeholder="Search students by name, school..."
+          value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 min-w-[250px] px-4 py-2 rounded-lg"
+          style={{ backgroundColor: '#161b22', border: '1px solid #21262d', color: '#e6edf3', outline: 'none' }}
           onFocus={(e) => e.target.style.borderColor = '#388bfd'}
-          onBlur={(e) => e.target.style.borderColor = '#21262d'}
-        />
-
-        {/* Form filter */}
-        <select
-          value={formFilter}
-          onChange={handleFormChange}
-          className="px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
-        >
-          {forms.map((form) => (
-            <option key={form} value={form} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>
-              {form}
-            </option>
-          ))}
+          onBlur={(e) => e.target.style.borderColor = '#21262d'} />
+        <select value={formFilter} onChange={(e) => setFormFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg"
+          style={{ backgroundColor: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}>
+          {forms.map((f) => <option key={f} value={f} style={{ backgroundColor: '#161b22' }}>{f}</option>)}
         </select>
-
-        {/* Status filter */}
-        <select
-          value={statusFilter}
-          onChange={handleStatusChange}
-          className="px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
-        >
-          {statuses.map((status) => (
-            <option key={status} value={status} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>
-              {status}
-            </option>
-          ))}
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg"
+          style={{ backgroundColor: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}>
+          {statuses.map((s) => <option key={s} value={s} style={{ backgroundColor: '#161b22' }}>{s}</option>)}
         </select>
-
-        {/* Add Student button */}
-        <button
-          onClick={handleAddStudent}
-          className="px-6 py-2 font-medium rounded-lg shadow hover:opacity-90 focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#2ea043',
-            color: '#e6edf3'
-          }}
-        >
+        <button onClick={() => setShowModal(true)}
+          className="px-4 py-2 rounded-lg text-sm font-medium"
+          style={{ backgroundColor: '#2ea043', color: '#fff' }}>
           + Add Student
         </button>
       </div>
 
-      {/* Students Table */}
-      <div className="overflow-x-auto rounded-lg shadow" style={{ backgroundColor: '#161b22' }}>
-        <table className="min-w-full table-auto border-collapse">
-          <thead style={{ backgroundColor: '#1c2330', borderBottom: '1px solid #21262d' }}>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                School
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Form
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Downloads
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Last Active
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y" style={{ borderColor: '#21262d' }}>
-            {filteredStudents.map((student) => {
-              const statusColors = getStatusColor(student.status);
-              return (
-                <tr 
-                  key={student.id} 
-                  className="transition-colors hover:bg-opacity-50" 
-                  style={{ backgroundColor: '#161b22', '--hover-bg': '#1c2330' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1c2330'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#161b22'}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#e6edf3' }}>
-                    {student.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                    {student.school}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                    {student.form}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                    {student.downloads}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                    {student.lastActive}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span 
-                      className="px-2 py-1 text-xs font-medium rounded-full"
-                      style={{ 
-                        backgroundColor: statusColors.bg,
-                        color: statusColors.text
-                      }}
-                    >
-                      {student.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {student.status === 'Suspended' ? (
-                      <button
-                        onClick={() => handleReinstate(student.name)}
-                        className="font-medium hover:underline focus:outline-none transition-colors"
-                        style={{ color: '#f0883e' }}
-                        onMouseEnter={(e) => e.target.style.color = '#da3633'}
-                        onMouseLeave={(e) => e.target.style.color = '#f0883e'}
-                      >
-                        Reinstate
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleView(student.name)}
-                        className="font-medium hover:underline focus:outline-none transition-colors"
-                        style={{ color: '#388bfd' }}
-                        onMouseEnter={(e) => e.target.style.color = '#2ea043'}
-                        onMouseLeave={(e) => e.target.style.color = '#388bfd'}
-                      >
-                        View
-                      </button>
-                    )}
-                  </td>
+      {loading && <div className="text-center py-12" style={{ color: '#8b949e' }}>Loading students...</div>}
+      {error && <div className="px-4 py-3 rounded-lg mb-4" style={{ backgroundColor: '#3d1f1f', border: '1px solid #f85149', color: '#f85149' }}>{error}</div>}
+
+      {!loading && !error && (
+        <>
+          <div className="overflow-x-auto rounded-lg shadow" style={{ backgroundColor: '#161b22' }}>
+            <table className="min-w-full table-auto border-collapse">
+              <thead style={{ backgroundColor: '#1c2330', borderBottom: '1px solid #21262d' }}>
+                <tr>
+                  {['Name', 'School', 'Email', 'Library Card', 'Joined', 'Status', 'Actions'].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>{h}</th>
+                  ))}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {/* No results message */}
-        {filteredStudents.length === 0 && (
-          <div className="px-6 py-8 text-center" style={{ color: '#6e7681' }}>
-            No students found matching your filters.
+              </thead>
+              <tbody>
+                {filteredStudents.map((s) => {
+                  const sc = statusColor(s.isActive)
+                  return (
+                    <tr key={s.id} style={{ backgroundColor: '#161b22', borderBottom: '1px solid #21262d' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1c2330'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#161b22'}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#e6edf3' }}>{s.firstName} {s.lastName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>{s.school?.name ?? '—'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>{s.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>{s.libraryCardNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>{formatDate(s.joinDate)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: sc.bg, color: sc.text }}>{sc.label}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button className="font-medium" style={{ color: '#388bfd' }}
+                          onMouseEnter={(e) => e.target.style.color = '#2ea043'}
+                          onMouseLeave={(e) => e.target.style.color = '#388bfd'}
+                          onClick={() => alert(`View: ${s.firstName} ${s.lastName}`)}>View</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {filteredStudents.length === 0 && (
+              <div className="px-6 py-8 text-center" style={{ color: '#6e7681' }}>No students found matching your filters.</div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
-  );
-};
+          <div className="mt-4 text-xs" style={{ color: '#6e7681' }}>Showing {filteredStudents.length} of {students.length} students</div>
+        </>
+      )}
 
-export default Students;
+      {/* Add Student Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
+          <div className="w-full max-w-md rounded-xl overflow-hidden" style={{ backgroundColor: '#161b22', border: '1px solid #21262d' }}>
+            <div className="px-5 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid #21262d' }}>
+              <h2 className="text-sm font-semibold" style={{ color: '#e6edf3' }}>Add New Student</h2>
+              <button onClick={() => setShowModal(false)} style={{ color: '#8b949e', fontSize: '20px', lineHeight: 1 }}>×</button>
+            </div>
+            <div className="p-5 max-h-[80vh] overflow-y-auto">
+              {formError && <div className="mb-4 px-3 py-2 rounded-lg text-xs" style={{ backgroundColor: '#3d1f1f', border: '1px solid #f85149', color: '#f85149' }}>{formError}</div>}
+              {formSuccess && <div className="mb-4 px-3 py-2 rounded-lg text-xs" style={{ backgroundColor: '#1a2f1a', border: '1px solid #2ea043', color: '#3fb950' }}>{formSuccess}</div>}
+              <form onSubmit={handleAddStudent}>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>First Name *</label>
+                    <input name="firstName" value={formData.firstName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="Grace" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Last Name *</label>
+                    <input name="lastName" value={formData.lastName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="Chikwanda" />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Email *</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="grace@school.mw" />
+                </div>
+                <div className="mb-3">
+                  <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Password *</label>
+                  <input type="password" name="password" value={formData.password} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="••••••••" />
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Library Card No. *</label>
+                    <input name="libraryCardNumber" value={formData.libraryCardNumber} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="LIB-001" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Age</label>
+                    <input type="number" name="age" value={formData.age} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="16" />
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>School</label>
+                  <select name="schoolId" value={formData.schoolId} onChange={handleFormChange} disabled={formLoading} style={inputStyle}>
+                    <option value="">Select school</option>
+                    {schools.map((s) => <option key={s.id} value={s.id} style={{ backgroundColor: '#1c2330' }}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Bio</label>
+                  <textarea name="bio" value={formData.bio} onChange={handleFormChange} disabled={formLoading} style={{ ...inputStyle, resize: 'none' }} rows="2" placeholder="Optional..." />
+                </div>
+                <div className="mb-4 px-3 py-2 rounded-lg text-xs" style={{ backgroundColor: '#1c2330', border: '1px solid #21262d', color: '#8b949e' }}>
+                  Role: <span style={{ color: '#388bfd', fontWeight: 600 }}>STUDENT</span> (set automatically)
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={formLoading}
+                    className="px-4 py-2 rounded-lg text-sm font-medium"
+                    style={{ backgroundColor: '#2ea043', color: '#fff', opacity: formLoading ? 0.5 : 1 }}>
+                    {formLoading ? 'Adding...' : 'Add Student'}
+                  </button>
+                  <button type="button" onClick={() => setShowModal(false)} disabled={formLoading}
+                    className="px-4 py-2 rounded-lg text-sm font-medium"
+                    style={{ backgroundColor: '#1c2330', color: '#8b949e', border: '1px solid #21262d' }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default Students

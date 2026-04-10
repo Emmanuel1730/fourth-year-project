@@ -1,210 +1,134 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import api from "../../api/api";
 
 const Schools = () => {
-  // Sample data based on the image
-  const initialSchools = [
-    {
-      id: 1,
-      name: 'Blantyre Secondary School',
-      district: 'Blantyre',
-      type: 'Public',
-      students: '1,243',
-      teachers: 48,
-      enrolled: 'Jan 2025',
-    },
-    {
-      id: 2,
-      name: 'Kamuzu Academy',
-      district: 'Kasungu',
-      type: 'Private',
-      students: '876',
-      teachers: 62,
-      enrolled: 'Mar 2025',
-    },
-    {
-      id: 3,
-      name: "St. Patrick's Secondary",
-      district: 'Mzuzu',
-      type: 'Public',
-      students: '654',
-      teachers: 31,
-      enrolled: 'Jun 2025',
-    },
-    {
-      id: 4,
-      name: 'Lilongwe Girls Secondary',
-      district: 'Lilongwe',
-      type: 'Public',
-      students: '932',
-      teachers: 44,
-      enrolled: 'Sep 2025',
-    },
-  ];
+  const [schools, setSchools] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [schools] = useState(initialSchools);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [districtFilter, setDistrictFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [districtFilter, setDistrictFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
 
-  // Get unique districts and types for filter dropdowns
-  const districts = ['All', ...new Set(schools.map((s) => s.district))];
-  const types = ['All', ...new Set(schools.map((s) => s.type))];
+  // 🔥 FETCH FROM BACKEND
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const res = await api.get("/school");
+        setSchools(res.data);
+      } catch (err) {
+        console.error("Failed to fetch schools:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filter schools based on search, district, and type
+    fetchSchools();
+  }, []);
+
+  // Extract filters
+  const districts = ["All", ...new Set(schools.map((s) => s.district))];
+  const types = ["All", ...new Set(schools.map((s) => s.type))];
+
+  // Filter logic
   const filteredSchools = schools.filter((school) => {
     const matchesSearch =
-      school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.district.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDistrict = districtFilter === 'All' || school.district === districtFilter;
-    const matchesType = typeFilter === 'All' || school.type === typeFilter;
+      school.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      school.district?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDistrict =
+      districtFilter === "All" || school.district === districtFilter;
+
+    const matchesType =
+      typeFilter === "All" || school.type === typeFilter;
 
     return matchesSearch && matchesDistrict && matchesType;
   });
 
-  // Handlers
-  const handleSearchChange = (e) => setSearchTerm(e.target.value);
-  const handleDistrictChange = (e) => setDistrictFilter(e.target.value);
-  const handleTypeChange = (e) => setTypeFilter(e.target.value);
-  const handleView = (schoolName) => alert(`View details for: ${schoolName}`);
-  const handleSchoolButtonClick = () => alert('School button clicked!');
+  const handleView = (school) => {
+    console.log("School:", school);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 text-white">
+        Loading schools...
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 min-h-screen font-sans" style={{ backgroundColor: '#0d1117' }}>
-      {/* Top bar: Search + Filters + School Button */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        {/* Search input */}
+    <div className="p-6 min-h-screen font-sans bg-[#0d1117]">
+      
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 mb-6">
+
         <input
           type="text"
-          placeholder="Search schools by name or district..."
+          placeholder="Search schools..."
           value={searchTerm}
-          onChange={handleSearchChange}
-          className="flex-1 min-w-[250px] px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#388bfd'}
-          onBlur={(e) => e.target.style.borderColor = '#21262d'}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 min-w-[250px] px-4 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-white"
         />
 
-        {/* District filter */}
         <select
           value={districtFilter}
-          onChange={handleDistrictChange}
-          className="px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
+          onChange={(e) => setDistrictFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-white"
         >
           {districts.map((d) => (
-            <option key={d} value={d} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>
-              {d === 'All' ? 'All Districts' : d}
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </select>
 
-        {/* Type filter */}
         <select
           value={typeFilter}
-          onChange={handleTypeChange}
-          className="px-4 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-white"
         >
           {types.map((t) => (
-            <option key={t} value={t} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>
-              {t === 'All' ? 'All Types' : t}
+            <option key={t} value={t}>
+              {t}
             </option>
           ))}
         </select>
-
-        {/* School button */}
-        <button
-          onClick={handleSchoolButtonClick}
-          className="px-6 py-2 font-medium rounded-lg shadow hover:opacity-90 focus:outline-none focus:ring-2 transition-colors"
-          style={{ 
-            backgroundColor: '#2ea043',
-            color: '#e6edf3'
-          }}
-        >
-          School
-        </button>
       </div>
 
-      {/* Schools Table */}
-      <div className="overflow-x-auto rounded-lg shadow" style={{ backgroundColor: '#161b22' }}>
-        <table className="min-w-full table-auto border-collapse">
-          <thead style={{ backgroundColor: '#1c2330', borderBottom: '1px solid #21262d' }}>
+      {/* Table */}
+      <div className="overflow-x-auto rounded-lg bg-[#161b22]">
+        <table className="min-w-full">
+          <thead className="bg-[#1c2330] border-b border-[#21262d]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                School Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                District
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Students
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Teachers
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Enrolled
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">Name</th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">District</th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">Type</th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">Students</th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">Teachers</th>
+              <th className="px-6 py-3 text-left text-xs text-[#8b949e]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y" style={{ borderColor: '#21262d' }}>
+
+          <tbody>
             {filteredSchools.map((school) => (
-              <tr 
-                key={school.id} 
-                className="transition-colors hover:bg-opacity-50" 
-                style={{ backgroundColor: '#161b22', '--hover-bg': '#1c2330' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1c2330'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#161b22'}
+              <tr
+                key={school.id}
+                className="border-b border-[#21262d] hover:bg-[#1c2330]"
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#e6edf3' }}>
-                  {school.name}
+                <td className="px-6 py-4 text-white">{school.name}</td>
+                <td className="px-6 py-4 text-[#8b949e]">{school.district}</td>
+                <td className="px-6 py-4 text-[#8b949e]">{school.type}</td>
+                <td className="px-6 py-4 text-[#8b949e]">
+                  {school.profiles?.length || 0}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                  {school.district}
+                <td className="px-6 py-4 text-[#8b949e]">
+                  {/* you may later filter teachers specifically */}
+                  {school.profiles?.length || 0}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                  {school.type}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                  {school.students}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                  {school.teachers}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
-                  {school.enrolled}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <td className="px-6 py-4">
                   <button
-                    onClick={() => handleView(school.name)}
-                    className="font-medium hover:underline focus:outline-none transition-colors"
-                    style={{ color: '#388bfd' }}
-                    onMouseEnter={(e) => e.target.style.color = '#2ea043'}
-                    onMouseLeave={(e) => e.target.style.color = '#388bfd'}
+                    onClick={() => handleView(school)}
+                    className="text-[#388bfd] hover:underline"
                   >
                     View
                   </button>
@@ -214,10 +138,9 @@ const Schools = () => {
           </tbody>
         </table>
 
-        {/* No results message */}
         {filteredSchools.length === 0 && (
-          <div className="px-6 py-8 text-center" style={{ color: '#6e7681' }}>
-            No schools found matching your filters.
+          <div className="p-6 text-center text-[#6e7681]">
+            No schools found
           </div>
         )}
       </div>
