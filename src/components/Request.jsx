@@ -8,6 +8,7 @@ const TYPE_STYLES = {
   School:       { bg: '#2ea04320', text: '#2ea043' },
   Issue:        { bg: '#da363320', text: '#da3633' },
   Delete:       { bg: '#da363320', text: '#da3633' },
+  Access:       { bg: '#a371f720', text: '#a371f7' },
 }
 
 const STATUS_STYLES = {
@@ -16,25 +17,41 @@ const STATUS_STYLES = {
   REJECTED: { bg: '#da363320', text: '#da3633' },
 }
 
+/**
+ * Returns the right action label(s) based on request type.
+ * - Delete  → "Approve Delete" / "Decline Delete"
+ * - Access/School/Registration → "Approve Access" / "Decline"
+ * - Upload/Issue/etc → generic "Approve" / "Reject"
+ */
+const getActionLabels = (type) => {
+  if (type === 'Delete')
+    return { approve: '🗑 Approve Delete', reject: 'Decline' }
+  if (['Access', 'School', 'Registration'].includes(type))
+    return { approve: '✅ Approve Access', reject: 'Decline' }
+  return { approve: 'Approve', reject: 'Reject' }
+}
+
 const RequestsPage = () => {
-  const [requests, setRequests]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState(null)
-  const [searchTerm, setSearchTerm]   = useState('')
-  const [typeFilter, setTypeFilter]   = useState('All Types')
-  const [statusFilter, setStatusFilter] = useState('All Status')
+  const [requests, setRequests]           = useState([])
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState(null)
+  const [searchTerm, setSearchTerm]       = useState('')
+  const [typeFilter, setTypeFilter]       = useState('All Types')
+  const [statusFilter, setStatusFilter]   = useState('All Status')
   const [actionLoading, setActionLoading] = useState(null)
 
-  const token = localStorage.getItem('accessToken')
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  const headers = () => {
+    const token = localStorage.getItem('accessToken')
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
   }
 
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`${API_BASE}/request`, { headers })
+      const res = await fetch(`${API_BASE}/request`, { headers: headers() })
       if (!res.ok) throw new Error(`Failed to fetch requests: ${res.status}`)
       const data = await res.json()
       setRequests(Array.isArray(data) ? data : [])
@@ -45,16 +62,14 @@ const RequestsPage = () => {
     }
   }
 
-  useEffect(() => {
-    fetchRequests()
-  }, [])
+  useEffect(() => { fetchRequests() }, [])
 
   const handleUpdateStatus = async (id, status) => {
     setActionLoading(`${id}-${status}`)
     try {
       const res = await fetch(`${API_BASE}/request/${id}/status`, {
         method: 'PATCH',
-        headers,
+        headers: headers(),
         body: JSON.stringify({ status }),
       })
       if (!res.ok) throw new Error('Failed to update status')
@@ -71,8 +86,7 @@ const RequestsPage = () => {
     setActionLoading(`${id}-delete`)
     try {
       const res = await fetch(`${API_BASE}/request/${id}`, {
-        method: 'DELETE',
-        headers,
+        method: 'DELETE', headers: headers(),
       })
       if (!res.ok) throw new Error('Failed to delete request')
       await fetchRequests()
@@ -85,200 +99,211 @@ const RequestsPage = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—'
-    const date = new Date(dateStr)
-    const today = new Date()
-    const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24))
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
     if (diff === 0) return 'Today'
     if (diff === 1) return 'Yesterday'
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   }
 
   const types    = ['All Types', ...new Set(requests.map((r) => r.type))]
   const statuses = ['All Status', 'PENDING', 'APPROVED', 'REJECTED']
 
   const filtered = requests.filter((req) => {
-    const matchesSearch = req.requestName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          req.fromUser?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = !searchTerm ||
+      req.requestName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.fromUser?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType   = typeFilter === 'All Types' || req.type === typeFilter
     const matchesStatus = statusFilter === 'All Status' || req.status === statusFilter
     return matchesSearch && matchesType && matchesStatus
   })
 
-  const pendingCount = requests.filter((r) => r.status === 'PENDING').length
+  const pendingCount  = requests.filter((r) => r.status === 'PENDING').length
+  const approvedCount = requests.filter((r) => r.status === 'APPROVED').length
 
   return (
-    <div className="p-6 min-h-screen font-sans" style={{ backgroundColor: '#0d1117' }}>
+    <div style={{ padding: 24, minHeight: '100vh', background: '#0d1117' }}>
 
-      {/* Top bar */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
+      {/* Page header */}
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ color: '#e6edf3', fontSize: 22, fontWeight: 700, margin: 0 }}>
+          Requests
+        </h1>
+        <p style={{ color: '#6e7681', fontSize: 13, marginTop: 4 }}>
+          Approve or reject incoming requests from teachers and students
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        {[
+          { label: 'Total',    value: requests.length, color: '#8b949e' },
+          { label: 'Pending',  value: pendingCount,     color: '#f0883e' },
+          { label: 'Approved', value: approvedCount,    color: '#2ea043' },
+          { label: 'Rejected', value: requests.filter(r => r.status === 'REJECTED').length, color: '#da3633' },
+        ].map(s => (
+          <div key={s.label} style={{
+            flex: 1, background: '#161b22', border: '1px solid #21262d',
+            borderRadius: 10, padding: '14px 16px',
+          }}>
+            <div style={{ color: s.color, fontSize: 22, fontWeight: 700 }}>{s.value}</div>
+            <div style={{ color: '#6e7681', fontSize: 12, marginTop: 2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <input
           type="text"
-          placeholder="Search by request name or user..."
+          placeholder="Search by name or user…"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 min-w-[250px] px-4 py-2 rounded-lg"
           style={{
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            outline: 'none',
+            flex: 1, minWidth: 220,
+            background: '#161b22', border: '1px solid #21262d',
+            borderRadius: 8, padding: '8px 14px',
+            color: '#e6edf3', fontSize: 13, outline: 'none',
           }}
-          onFocus={(e) => e.target.style.borderColor = '#388bfd'}
-          onBlur={(e) => e.target.style.borderColor = '#21262d'}
+          onFocus={e => e.target.style.borderColor = '#388bfd'}
+          onBlur={e => e.target.style.borderColor = '#21262d'}
         />
-
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-4 py-2 rounded-lg"
-          style={{
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-          }}
+          onChange={e => setTypeFilter(e.target.value)}
+          style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, padding: '8px 14px', color: '#e6edf3', fontSize: 13, outline: 'none' }}
         >
-          {types.map((t) => (
-            <option key={t} value={t} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>{t}</option>
-          ))}
+          {types.map(t => <option key={t} value={t} style={{ background: '#161b22' }}>{t}</option>)}
         </select>
-
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 rounded-lg"
-          style={{
-            backgroundColor: '#161b22',
-            borderColor: '#21262d',
-            color: '#e6edf3',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-          }}
+          onChange={e => setStatusFilter(e.target.value)}
+          style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, padding: '8px 14px', color: '#e6edf3', fontSize: 13, outline: 'none' }}
         >
-          {statuses.map((s) => (
-            <option key={s} value={s} style={{ backgroundColor: '#161b22', color: '#e6edf3' }}>{s}</option>
-          ))}
+          {statuses.map(s => <option key={s} value={s} style={{ background: '#161b22' }}>{s}</option>)}
         </select>
       </div>
 
-      {/* Loading */}
       {loading && (
-        <div className="text-center py-12" style={{ color: '#8b949e' }}>
-          Loading requests...
-        </div>
+        <div style={{ textAlign: 'center', padding: 48, color: '#8b949e' }}>Loading requests…</div>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="px-4 py-3 rounded-lg mb-4" style={{ backgroundColor: '#3d1f1f', border: '1px solid #f85149', color: '#f85149' }}>
+        <div style={{ background: '#3d1f1f', border: '1px solid #f85149', borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#f85149', fontSize: 13 }}>
           {error}
         </div>
       )}
 
-      {/* Table */}
       {!loading && !error && (
-        <div className="overflow-x-auto rounded-lg shadow" style={{ backgroundColor: '#161b22' }}>
-
-          {/* Table header */}
-          <div className="px-6 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid #21262d' }}>
-            <h2 className="text-sm font-semibold" style={{ color: '#e6edf3' }}>
+        <div style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #21262d', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ color: '#e6edf3', fontSize: 14, fontWeight: 600, margin: 0 }}>
               Pending Requests & Approvals
             </h2>
-            <span className="text-xs" style={{ color: '#8b949e' }}>
+            <span style={{ color: '#8b949e', fontSize: 12 }}>
               {pendingCount} item{pendingCount !== 1 ? 's' : ''} need attention
             </span>
           </div>
 
-          <table className="min-w-full table-auto border-collapse">
-            <thead style={{ backgroundColor: '#1c2330', borderBottom: '1px solid #21262d' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ background: '#1c2330', borderBottom: '1px solid #21262d' }}>
               <tr>
-                {['Request', 'From', 'Type', 'Date', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: '#8b949e' }}>
+                {['Request', 'From', 'Type', 'Date', 'Status', 'Actions'].map(h => (
+                  <th key={h} style={{ padding: '10px 20px', textAlign: 'left', color: '#6e7681', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600 }}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((req) => {
+              {filtered.map(req => {
                 const typeStyle   = TYPE_STYLES[req.type]   ?? { bg: '#6e768120', text: '#8b949e' }
                 const statusStyle = STATUS_STYLES[req.status] ?? { bg: '#6e768120', text: '#8b949e' }
                 const isPending   = req.status === 'PENDING'
+                const isDelete    = req.type === 'Delete'
+                const labels      = getActionLabels(req.type)
 
                 return (
                   <tr
                     key={req.id}
-                    style={{ backgroundColor: '#161b22', borderBottom: '1px solid #21262d' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1c2330'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#161b22'}
+                    style={{ borderBottom: '1px solid #21262d', background: isDelete && isPending ? 'rgba(218,54,51,0.03)' : 'transparent' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#1c2330'}
+                    onMouseLeave={e => e.currentTarget.style.background = isDelete && isPending ? 'rgba(218,54,51,0.03)' : 'transparent'}
                   >
-                    {/* Request name */}
-                    <td className="px-6 py-4 text-sm font-medium" style={{ color: '#e6edf3', maxWidth: '220px' }}>
-                      <div className="truncate">{req.requestName}</div>
+                    <td style={{ padding: '14px 20px', maxWidth: 240 }}>
+                      <div style={{ color: '#e6edf3', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {isDelete && <span style={{ marginRight: 6 }}>⚠️</span>}
+                        {req.requestName}
+                      </div>
                       {req.description && (
-                        <div className="text-xs mt-0.5 truncate" style={{ color: '#6e7681' }}>{req.description}</div>
+                        <div style={{ color: '#6e7681', fontSize: 12, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {req.description}
+                        </div>
                       )}
                     </td>
 
-                    {/* From */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
+                    <td style={{ padding: '14px 20px', color: '#8b949e', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {req.fromUser}
                     </td>
 
-                    {/* Type badge */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full"
-                        style={{ backgroundColor: typeStyle.bg, color: typeStyle.text }}>
+                    <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: typeStyle.bg, color: typeStyle.text }}>
                         {req.type}
                       </span>
                     </td>
 
-                    {/* Date */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: '#8b949e' }}>
+                    <td style={{ padding: '14px 20px', color: '#8b949e', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {formatDate(req.createdAt)}
                     </td>
 
-                    {/* Status badge */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full"
-                        style={{ backgroundColor: statusStyle.bg, color: statusStyle.text }}>
+                    <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: statusStyle.bg, color: statusStyle.text }}>
                         {req.status}
                       </span>
                     </td>
 
-                    {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
+                    <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
                         {isPending && (
                           <>
                             <button
                               disabled={!!actionLoading}
                               onClick={() => handleUpdateStatus(req.id, 'APPROVED')}
-                              className="px-3 py-1 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-                              style={{ backgroundColor: '#2ea043', color: '#fff' }}
+                              style={{
+                                padding: '5px 12px', borderRadius: 6, border: 'none',
+                                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                                background: isDelete ? '#da3633' : '#2ea043',
+                                color: '#fff', opacity: actionLoading ? .6 : 1,
+                              }}
                             >
-                              {actionLoading === `${req.id}-APPROVED` ? '...' : 'Approve'}
+                              {actionLoading === `${req.id}-APPROVED` ? '…' : labels.approve}
                             </button>
                             <button
                               disabled={!!actionLoading}
                               onClick={() => handleUpdateStatus(req.id, 'REJECTED')}
-                              className="px-3 py-1 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-                              style={{ backgroundColor: '#da3633', color: '#fff' }}
+                              style={{
+                                padding: '5px 12px', borderRadius: 6,
+                                border: '1px solid #21262d',
+                                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                                background: '#1c2330', color: '#8b949e',
+                                opacity: actionLoading ? .6 : 1,
+                              }}
                             >
-                              {actionLoading === `${req.id}-REJECTED` ? '...' : 'Reject'}
+                              {actionLoading === `${req.id}-REJECTED` ? '…' : labels.reject}
                             </button>
                           </>
                         )}
                         <button
                           disabled={!!actionLoading}
                           onClick={() => handleDelete(req.id)}
-                          className="px-3 py-1 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-                          style={{ backgroundColor: '#21262d', color: '#8b949e' }}
+                          style={{
+                            padding: '5px 12px', borderRadius: 6,
+                            border: '1px solid #21262d',
+                            fontSize: 12, cursor: 'pointer',
+                            background: '#1c2330', color: '#6e7681',
+                            opacity: actionLoading ? .6 : 1,
+                          }}
                         >
-                          {actionLoading === `${req.id}-delete` ? '...' : 'Delete'}
+                          {actionLoading === `${req.id}-delete` ? '…' : '🗑'}
                         </button>
                       </div>
                     </td>
@@ -289,16 +314,15 @@ const RequestsPage = () => {
           </table>
 
           {filtered.length === 0 && (
-            <div className="px-6 py-8 text-center" style={{ color: '#6e7681' }}>
+            <div style={{ padding: 48, textAlign: 'center', color: '#6e7681', fontSize: 13 }}>
               No requests found matching your filters.
             </div>
           )}
         </div>
       )}
 
-      {/* Summary */}
       {!loading && !error && (
-        <div className="mt-4 text-xs" style={{ color: '#6e7681' }}>
+        <div style={{ marginTop: 12, color: '#6e7681', fontSize: 12 }}>
           Showing {filtered.length} of {requests.length} requests
         </div>
       )}
