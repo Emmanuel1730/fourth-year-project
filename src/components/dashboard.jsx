@@ -2,30 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
-<<<<<<< HEAD
-// ─── colour helpers ────────────────────────────────────────────────────────────
-const SUBJECT_COLORS = [
-  'bg-blue-500', 'bg-green-500', 'bg-orange-500',
-  'bg-red-500',  'bg-purple-500','bg-cyan-500', 'bg-yellow-500',
-];
-=======
-const DashboardOverview = ({ isDarkMode }) => {
-  // ---------- Dummy Data for dashboard, it will be replaced with actual data from backend ----------
-  const [stats] = useState([
-    { label: 'Total Resources', value: '1,284', change: '+34', changeLabel: 'added this month', icon: '📚', color: 'green' },
-    { label: 'Registered Students', value: '8,431', change: '+312', changeLabel: 'new this month', icon: '🎓', color: 'blue' },
-    { label: 'Active Teachers', value: '673', change: '+21', changeLabel: 'new this month', icon: '👩‍🏫', color: 'orange' },
-    { label: 'Schools Enrolled', value: '148', change: '+6', changeLabel: 'added this month', icon: '🏫', color: 'red' },
-  ]);
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
-
-const colorMap = {
-  green:  { bar: 'bg-green-500',  text: 'text-green-500'  },
-  blue:   { bar: 'bg-blue-500',   text: 'text-blue-500'   },
-  orange: { bar: 'bg-orange-500', text: 'text-orange-500' },
-  red:    { bar: 'bg-red-500',    text: 'text-red-500'    },
-};
-
 // ─── tiny helpers ──────────────────────────────────────────────────────────────
 const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
@@ -49,6 +25,11 @@ const timeAgo = (dateStr) => {
 };
 
 const fmtDownloads = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+
+const SUBJECT_COLORS = [
+  'bg-blue-500', 'bg-orange-500', 'bg-green-500',
+  'bg-purple-500', 'bg-red-500', 'bg-yellow-500', 'bg-pink-500',
+];
 
 // ─── status / type tags ────────────────────────────────────────────────────────
 const StatusTag = ({ status }) => {
@@ -93,13 +74,9 @@ const activityDotColor = (type) => {
 };
 
 // ─── derive downloads-by-subject from resources list ──────────────────────────
-// Raw API shape mirrors what Resources.jsx receives:
-//   r.category?.name  → subject name  (same as r.category?.name in Resources)
-//   r.downloadCount   → download count
 const deriveDownloadsBySubject = (resources = []) => {
   const counts = {};
   resources.forEach((r) => {
-    // Mirror exactly how Resources.jsx reads the subject
     const subject = r.category?.name || r.subject || 'Other';
     const dlCount = r.downloadCount ?? r.downloads ?? 0;
     counts[subject] = (counts[subject] || 0) + dlCount;
@@ -123,11 +100,6 @@ const deriveDownloadsBySubject = (resources = []) => {
 };
 
 // ─── derive storage breakdown from resources list ─────────────────────────────
-// NOTE: This only works if your /resources API response includes a file size field.
-// Common field names: fileSize, size, fileSizeBytes, sizeInBytes, contentLength.
-// If your API doesn't return any of these, storage will read as 0 — you need to
-// either (a) add fileSize to your resource serialiser/select, or (b) add a
-// dedicated GET /storage endpoint that queries Supabase storage bucket metadata.
 const STORAGE_LIMIT_BYTES = 10 * 1e9; // 10 GB assumed limit
 
 const deriveStorage = (resources = []) => {
@@ -136,7 +108,6 @@ const deriveStorage = (resources = []) => {
 
   resources.forEach((r) => {
     const type = r.type?.toUpperCase() ?? 'OTHER';
-    // Try every common field name backends use for file size
     const bytes =
       r.fileSize       ??
       r.fileSizeBytes  ??
@@ -149,7 +120,6 @@ const deriveStorage = (resources = []) => {
     total += bytes;
   });
 
-  // Warn in dev if no size data found — helps diagnose "0B" issues
   if (total === 0 && resources.length > 0) {
     console.warn(
       '[Dashboard] Storage reads 0B. Your /resources API response does not include a file size field.\n' +
@@ -191,7 +161,6 @@ const deriveStorage = (resources = []) => {
 const deriveActivities = (resources = [], profiles = []) => {
   const events = [];
 
-  // Most recently uploaded resources → upload events
   const recent = [...resources]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 3);
@@ -208,7 +177,6 @@ const deriveActivities = (resources = [], profiles = []) => {
     });
   });
 
-  // Most recently joined profiles → enrollment events
   const newProfiles = [...profiles]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 2);
@@ -230,7 +198,7 @@ const deriveActivities = (resources = [], profiles = []) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-const DashboardOverview = () => {
+const DashboardOverview = ({ isDarkMode }) => {
   const navigate = useNavigate();
 
   // ── state ──────────────────────────────────────────────────────────────────
@@ -241,10 +209,10 @@ const DashboardOverview = () => {
     totalSchools:   null,
   });
 
-  const [recentResources, setRecentResources]   = useState([]);
-  const [downloadsData,   setDownloadsData]     = useState([]);
-  const [activities,      setActivities]        = useState([]);
-  const [storage,         setStorage]           = useState(null);
+  const [recentResources, setRecentResources] = useState([]);
+  const [downloadsData,   setDownloadsData]   = useState([]);
+  const [activities,      setActivities]      = useState([]);
+  const [storage,         setStorage]         = useState(null);
 
   const [loadingStats,     setLoadingStats]     = useState(true);
   const [loadingResources, setLoadingResources] = useState(true);
@@ -252,31 +220,27 @@ const DashboardOverview = () => {
   const [loadingStorage,   setLoadingStorage]   = useState(true);
   const [loadingDownloads, setLoadingDownloads] = useState(true);
 
-<<<<<<< HEAD
-=======
+  const [toast, setToast] = useState({ message: '', visible: false });
+
   const theme = isDarkMode
     ? {
-        root: 'text-gray-200 bg-gray-900',
-        card: 'bg-gray-800 border border-gray-700',
+        root:          'text-gray-200 bg-gray-900',
+        card:          'bg-gray-800 border border-gray-700',
         sectionBorder: 'border-gray-700',
-        mutedText: 'text-gray-400',
+        mutedText:     'text-gray-400',
         secondaryText: 'text-gray-300',
-        rowHover: 'hover:bg-gray-700/30',
-        toast: 'fixed bottom-4 right-4 z-50 bg-gray-800 border-l-4 border-green-500 rounded shadow-lg p-3 text-sm animate-fade-in-up',
+        rowHover:      'hover:bg-gray-700/30',
+        toast:         'fixed bottom-4 right-4 z-50 bg-gray-800 border-l-4 border-green-500 rounded shadow-lg p-3 text-sm animate-fade-in-up',
       }
     : {
-        root: 'text-slate-900 bg-slate-100',
-        card: 'bg-white border border-slate-200',
+        root:          'text-slate-900 bg-slate-100',
+        card:          'bg-white border border-slate-200',
         sectionBorder: 'border-slate-200',
-        mutedText: 'text-slate-500',
+        mutedText:     'text-slate-500',
         secondaryText: 'text-slate-600',
-        rowHover: 'hover:bg-slate-100',
-        toast: 'fixed bottom-4 right-4 z-50 bg-white border-l-4 border-green-500 rounded shadow-lg p-3 text-sm animate-fade-in-up',
+        rowHover:      'hover:bg-slate-100',
+        toast:         'fixed bottom-4 right-4 z-50 bg-white border-l-4 border-green-500 rounded shadow-lg p-3 text-sm animate-fade-in-up',
       };
-
-  // ---------- Toast State ----------
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
-  const [toast, setToast] = useState({ message: '', visible: false });
 
   // ── toast helper ───────────────────────────────────────────────────────────
   const showToast = useCallback((message) => {
@@ -284,11 +248,10 @@ const DashboardOverview = () => {
     setTimeout(() => setToast({ message: '', visible: false }), 3000);
   }, []);
 
-  // ── main fetch — uses shared api instance (handles auth automatically) ─────
+  // ── main fetch ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // Core data — all in parallel
         const [profilesRes, resourcesRes, schoolsRes] = await Promise.all([
           api.get('/profiles').catch(() => ({ data: [] })),
           api.get('/resources').catch(() => ({ data: {} })),
@@ -301,7 +264,6 @@ const DashboardOverview = () => {
         const resourceList = Array.isArray(resources?.data) ? resources.data : [];
         const profileList  = Array.isArray(profiles)        ? profiles       : [];
 
-        // ── stats cards ──────────────────────────────────────────────────────
         setStats({
           totalResources: resources?.total ?? resourceList.length ?? null,
           totalStudents:  profileList.filter((p) => p.role === 'STUDENT').length  || null,
@@ -310,19 +272,15 @@ const DashboardOverview = () => {
         });
         setLoadingStats(false);
 
-        // ── recent resources table ───────────────────────────────────────────
         const sorted = [...resourceList]
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 5);
         setRecentResources(sorted);
         setLoadingResources(false);
 
-        // ── downloads by subject ─────────────────────────────────────────────
-        // Derived from resources list — groups by category.name + sums downloadCount
         setDownloadsData(deriveDownloadsBySubject(resourceList));
         setLoadingDownloads(false);
 
-        // ── activity feed ────────────────────────────────────────────────────
         let activitiesFromAPI = null;
         try {
           const { data: actData } = await api.get('/activity');
@@ -334,16 +292,14 @@ const DashboardOverview = () => {
               dotColor: activityDotColor(a.type ?? a.action ?? ''),
             }));
           }
-        } catch (_) { /* endpoint may not exist — fall through to derivation */ }
+        } catch (_) { /* endpoint may not exist */ }
 
         setActivities(activitiesFromAPI ?? deriveActivities(resourceList, profileList));
         setLoadingActivity(false);
 
-        // ── storage — hits GET /storage (Supabase bucket metadata) ───────────
         let storageFromAPI = null;
         try {
           const { data: stData } = await api.get('/storage');
-          // Response shape from storage.service.ts: { usedBytes, totalBytes, fileCount, breakdown }
           if (stData?.usedBytes !== undefined) {
             storageFromAPI = {
               used:       formatBytes(stData.usedBytes),
@@ -382,22 +338,24 @@ const DashboardOverview = () => {
 
   // ── stat cards config ──────────────────────────────────────────────────────
   const statCards = [
-    { label: 'Total Resources',      value: loadingStats ? '...' : stats.totalResources  ?? '—', icon: '📚', color: 'green' },
-    { label: 'Registered Students',  value: loadingStats ? '...' : stats.totalStudents   ?? '—', icon: '🎓', color: 'blue'  },
-    { label: 'Active Teachers',      value: loadingStats ? '...' : stats.activeTeachers  ?? '—', icon: '👩‍🏫', color: 'orange'},
-    { label: 'Schools Enrolled',     value: loadingStats ? '...' : stats.totalSchools    ?? '—', icon: '🏫', color: 'red'   },
+    { label: 'Total Resources',     value: loadingStats ? '...' : stats.totalResources  ?? '—', icon: '📚', color: 'green'  },
+    { label: 'Registered Students', value: loadingStats ? '...' : stats.totalStudents   ?? '—', icon: '🎓', color: 'blue'   },
+    { label: 'Active Teachers',     value: loadingStats ? '...' : stats.activeTeachers  ?? '—', icon: '👩‍🏫', color: 'orange' },
+    { label: 'Schools Enrolled',    value: loadingStats ? '...' : stats.totalSchools    ?? '—', icon: '🏫', color: 'red'    },
   ];
+
+  const colorMap = {
+    green:  { bar: 'bg-green-500',  text: 'text-green-500'  },
+    blue:   { bar: 'bg-blue-500',   text: 'text-blue-500'   },
+    orange: { bar: 'bg-orange-500', text: 'text-orange-500' },
+    red:    { bar: 'bg-red-500',    text: 'text-red-500'    },
+  };
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
-<<<<<<< HEAD
-    <div className="p-6 text-gray-200 bg-gray-900 min-h-screen">
-
-      {/* Toast */}
-=======
     <div className={`p-6 min-h-screen ${theme.root}`}>
+
       {/* Toast Notification */}
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
       {toast.visible && (
         <div className={theme.toast}>
           {toast.message}
@@ -406,141 +364,64 @@ const DashboardOverview = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-<<<<<<< HEAD
         {statCards.map((stat, idx) => (
-          <div key={idx} className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative overflow-hidden hover:border-gray-500 transition">
+          <div key={idx} className={`${theme.card} rounded-lg p-4 relative overflow-hidden transition`}>
             <div className={`absolute top-0 left-0 w-full h-1 ${colorMap[stat.color].bar}`} />
             <div className="absolute right-3 top-3 text-3xl opacity-20">{stat.icon}</div>
-            <div className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</div>
+            <div className={`text-xs ${theme.mutedText} uppercase tracking-wider`}>{stat.label}</div>
             <div className={`text-2xl font-mono font-semibold mt-1 ${colorMap[stat.color].text}`}>
               {stat.value}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Live from database</div>
-=======
-        {stats.map((stat, idx) => (
-          <div key={idx} className={`${theme.card} rounded-lg p-4 relative overflow-hidden transition`}>
-            <div className={`absolute top-0 left-0 w-full h-1 ${stat.color === 'green' ? 'bg-green-500' : stat.color === 'blue' ? 'bg-blue-500' : stat.color === 'orange' ? 'bg-orange-500' : 'bg-red-500'}`} />
-            <div className="absolute right-3 top-3 text-3xl opacity-20">{stat.icon}</div>
-            <div className={`text-xs ${theme.mutedText} uppercase tracking-wider`}>{stat.label}</div>
-            <div className={`text-2xl font-mono font-semibold mt-1 ${stat.color === 'green' ? 'text-green-500' : stat.color === 'blue' ? 'text-blue-500' : stat.color === 'orange' ? 'text-orange-500' : 'text-red-500'}`}>
-              {stat.value}
-            </div>
-            <div className={`text-xs ${theme.mutedText} mt-1`}>
-              <span className="text-green-500">{stat.change}</span> {stat.changeLabel}
-            </div>
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
           </div>
         ))}
       </div>
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-<<<<<<< HEAD
 
-        {/* Downloads by Subject — dynamic */}
-        <div className="lg:col-span-2 bg-gray-800 border border-gray-700 rounded-lg">
-          <div className="flex justify-between items-center p-4 border-b border-gray-700">
-            <h3 className="font-semibold">Resource Downloads by Subject</h3>
-            <span className="text-xs text-gray-500">
-              {loadingDownloads ? 'Loading…' : 'Live'}
-            </span>
-          </div>
-          <div className="p-4 space-y-3">
-            {loadingDownloads ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 animate-pulse">
-                    <div className="w-20 h-3 bg-gray-700 rounded" />
-                    <div className="flex-1 h-2 bg-gray-700 rounded" />
-                    <div className="w-10 h-3 bg-gray-700 rounded" />
-=======
         {/* Left: Downloads Chart */}
         <div className={`${theme.card} rounded-lg lg:col-span-2`}>
           <div className={`flex justify-between items-center p-4 border-b ${theme.sectionBorder}`}>
             <h3 className="font-semibold">Resource Downloads by Subject</h3>
           </div>
           <div className="p-4 space-y-3">
-            {downloadsData.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <span className={`w-20 text-sm ${theme.secondaryText}`}>{item.subject}</span>
-                <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
-                  <div className={`h-full ${item.color} rounded`} style={{ width: `${item.percentage}%` }} />
-                </div>
-                <span className={`font-mono text-xs ${theme.mutedText} w-10 text-right`}>{item.downloads}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right column: Activity + Storage */}
-        <div className="space-y-6">
-          {/* Activity Feed */}
-          <div className={`${theme.card} rounded-lg`}>
-            <div className={`p-4 border-b ${theme.sectionBorder}`}>
-              <h3 className="font-semibold">Recent Activity</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              {activities.map((act, idx) => (
-                <div key={idx} className="flex gap-3">
-                  <div className={`w-2 h-2 mt-1 rounded-full ${act.dotColor} flex-shrink-0`} />
-                  <div>
-                    <div className="text-sm" dangerouslySetInnerHTML={{ __html: act.text }} />
-                    <div className="text-xs text-gray-500 font-mono mt-1">{act.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Storage Usage */}
-          <div className={`${theme.card} rounded-lg`}>
-            <div className={`p-4 border-b ${theme.sectionBorder}`}>
-              <h3 className="font-semibold">Storage Usage</h3>
-            </div>
-            <div className="p-4">
-              <div className="flex justify-between text-sm mb-1">
-                <span className={`${theme.mutedText}`}>Used</span>
-                <span className="font-mono">{storage.used} / {storage.total}</span>
-              </div>
-              <div className="h-2 bg-gray-700 rounded overflow-hidden">
-                <div className="h-full bg-orange-500 rounded" style={{ width: `${storage.percentage}%` }} />
-              </div>
-              <div className="mt-4 space-y-2">
-                {storage.breakdown.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <span className={`${theme.mutedText}`}>{item.label}</span>
-                    <span className={`font-mono ${item.color}`}>{item.value}</span>
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
+            {loadingDownloads ? (
+              <div className="animate-pulse space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-20 h-3 bg-gray-700 rounded" />
+                    <div className="flex-1 h-2 bg-gray-700 rounded" />
+                    <div className="w-10 h-3 bg-gray-700 rounded" />
                   </div>
                 ))}
               </div>
             ) : downloadsData.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-4">No download data available.</div>
+              <div className={`text-sm ${theme.mutedText} text-center py-4`}>No download data available.</div>
             ) : (
               downloadsData.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
-                  <span className="w-20 text-sm text-gray-300 truncate">{item.subject}</span>
+                  <span className={`w-20 text-sm ${theme.secondaryText} truncate`}>{item.subject}</span>
                   <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
                     <div
                       className={`h-full ${item.color} rounded transition-all duration-500`}
                       style={{ width: `${item.percentage}%` }}
                     />
                   </div>
-                  <span className="font-mono text-xs text-gray-400 w-10 text-right">{item.downloads}</span>
+                  <span className={`font-mono text-xs ${theme.mutedText} w-10 text-right`}>{item.downloads}</span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        {/* Right column */}
+        {/* Right column: Activity + Storage */}
         <div className="space-y-6">
 
-          {/* Activity Feed — dynamic */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg">
-            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          {/* Activity Feed */}
+          <div className={`${theme.card} rounded-lg`}>
+            <div className={`flex justify-between items-center p-4 border-b ${theme.sectionBorder}`}>
               <h3 className="font-semibold">Recent Activity</h3>
-              <span className="text-xs text-gray-500">
+              <span className={`text-xs ${theme.mutedText}`}>
                 {loadingActivity ? 'Loading…' : 'Live'}
               </span>
             </div>
@@ -558,14 +439,14 @@ const DashboardOverview = () => {
                   ))}
                 </div>
               ) : activities.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-2">No recent activity.</div>
+                <div className={`text-sm ${theme.mutedText} text-center py-2`}>No recent activity.</div>
               ) : (
                 activities.map((act, idx) => (
                   <div key={idx} className="flex gap-3">
                     <div className={`w-2 h-2 mt-1 rounded-full ${act.dotColor} flex-shrink-0`} />
                     <div>
                       <div className="text-sm">{act.text}</div>
-                      <div className="text-xs text-gray-500 font-mono mt-1">{act.time}</div>
+                      <div className={`text-xs ${theme.mutedText} font-mono mt-1`}>{act.time}</div>
                     </div>
                   </div>
                 ))
@@ -573,11 +454,11 @@ const DashboardOverview = () => {
             </div>
           </div>
 
-          {/* Storage Usage — dynamic */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg">
-            <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          {/* Storage Usage */}
+          <div className={`${theme.card} rounded-lg`}>
+            <div className={`flex justify-between items-center p-4 border-b ${theme.sectionBorder}`}>
               <h3 className="font-semibold">Storage Usage</h3>
-              <span className="text-xs text-gray-500">
+              <span className={`text-xs ${theme.mutedText}`}>
                 {loadingStorage ? 'Loading…' : 'Live'}
               </span>
             </div>
@@ -596,19 +477,18 @@ const DashboardOverview = () => {
                   </div>
                 </div>
               ) : !storage ? (
-                <div className="text-sm text-gray-500 text-center py-2">No storage data available.</div>
+                <div className={`text-sm ${theme.mutedText} text-center py-2`}>No storage data available.</div>
               ) : storage.noSizeData ? (
                 <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded p-3 leading-relaxed">
                   <span className="font-semibold block mb-1">⚠️ File size not returned by API</span>
-                  Your <code className="text-orange-300">/resources</code> response doesn't include a file size field
-                  (e.g. <code className="text-orange-300">fileSize</code>). Add it to your resource
-                  serialiser/select, or create a <code className="text-orange-300">GET /storage</code> endpoint
-                  that reads Supabase bucket metadata.
+                  Your <code className="text-orange-300">/resources</code> response does not include a file size field.
+                  Add <code className="text-orange-300">fileSize</code> to your resource serialiser, or create a{' '}
+                  <code className="text-orange-300">GET /storage</code> endpoint.
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-400">Used</span>
+                    <span className={theme.mutedText}>Used</span>
                     <span className="font-mono">{storage.used} / {storage.total}</span>
                   </div>
                   <div className="h-2 bg-gray-700 rounded overflow-hidden">
@@ -624,7 +504,7 @@ const DashboardOverview = () => {
                     <div className="mt-4 space-y-2">
                       {storage.breakdown.map((item, idx) => (
                         <div key={idx} className="flex justify-between text-sm">
-                          <span className="text-gray-400">{item.label}</span>
+                          <span className={theme.mutedText}>{item.label}</span>
                           <span className={`font-mono ${item.color}`}>{item.value}</span>
                         </div>
                       ))}
@@ -646,34 +526,6 @@ const DashboardOverview = () => {
             View All →
           </button>
         </div>
-<<<<<<< HEAD
-
-        {loadingResources ? (
-          <div className="p-6 text-center text-sm text-gray-500">Loading resources...</div>
-        ) : recentResources.length === 0 ? (
-          <div className="p-6 text-center text-sm text-gray-500">No resources found.</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-400 uppercase border-b border-gray-700">
-              <tr>
-                {['Title', 'Type', 'Visibility', 'Uploaded By', 'Date', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className="text-left p-3">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentResources.map((r, idx) => (
-                <tr key={idx} className="border-b border-gray-700 hover:bg-gray-700/30">
-                  <td className="p-3 max-w-[180px] truncate">{r.title}</td>
-                  <td className="p-3"><TypeTag type={r.type} /></td>
-                  <td className="p-3 text-gray-400">{r.visibility}</td>
-                  <td className="p-3 text-gray-400">
-                    {r.uploader ? `${r.uploader.firstName} ${r.uploader.lastName}` : '—'}
-                  </td>
-                  <td className="p-3 text-gray-400">{formatDate(r.createdAt)}</td>
-                  <td className="p-3"><StatusTag status={r.status} /></td>
-                  <td className="p-3">
-=======
         <table className="w-full text-sm">
           <thead className={`text-xs ${theme.mutedText} uppercase border-b ${theme.sectionBorder}`}>
             <tr>
@@ -688,34 +540,45 @@ const DashboardOverview = () => {
             </tr>
           </thead>
           <tbody>
-            {recentResources.map((resource, idx) => (
-              <tr key={idx} className={`border-b ${theme.sectionBorder} ${theme.rowHover}`}>
-                <td className="p-3">{resource.title}</td>
-                <td className="p-3">{resource.subject}</td>
-                <td className="p-3">
-                  <TypeTag type={resource.type} color={resource.typeColor} />
-                </td>
-                <td className="p-3">{resource.form}</td>
-                <td className="p-3">{resource.uploadedBy}</td>
-                <td className="p-3">{resource.date}</td>
-                <td className="p-3">
-                  <StatusTag status={resource.status} color={resource.statusColor} />
-                </td>
-                <td className="p-3">
-                  {resource.status === 'Pending' ? (
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
+            {loadingResources ? (
+              <tr>
+                <td colSpan={8} className={`p-4 text-center ${theme.mutedText}`}>Loading…</td>
+              </tr>
+            ) : recentResources.length === 0 ? (
+              <tr>
+                <td colSpan={8} className={`p-4 text-center ${theme.mutedText}`}>No resources found.</td>
+              </tr>
+            ) : (
+              recentResources.map((resource, idx) => (
+                <tr key={idx} className={`border-b ${theme.sectionBorder} ${theme.rowHover}`}>
+                  <td className="p-3">{resource.title}</td>
+                  <td className="p-3">{resource.category?.name ?? resource.subject ?? '—'}</td>
+                  <td className="p-3"><TypeTag type={resource.type} /></td>
+                  <td className="p-3">{resource.form ?? '—'}</td>
+                  <td className="p-3">
+                    {resource.uploader
+                      ? `${resource.uploader.firstName} ${resource.uploader.lastName}`
+                      : '—'}
+                  </td>
+                  <td className="p-3">{formatDate(resource.createdAt)}</td>
+                  <td className="p-3"><StatusTag status={resource.status} /></td>
+                  <td className="p-3">
                     <button
-                      onClick={() => showToast(`✏️ Editing "${r.title}"`)}
-                      className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded hover:bg-gray-600 text-gray-200"
+                      onClick={() => showToast(`✏️ Editing "${resource.title}"`)}
+                      className={`px-2 py-1 text-xs rounded border ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-200'
+                          : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'
+                      }`}
                     >
                       Edit
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <style>{`

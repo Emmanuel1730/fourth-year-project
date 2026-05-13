@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./components/sidebar";
 import Header from "./components/header";
 import Resources from "./components/Library/Resources";
@@ -15,107 +15,74 @@ import DashboardOverview from "./components/dashboard";
 import { refreshAccessToken } from "./utils/AuthUtils";
 import AdminsPage from "./components/Admin/Admin";
 
-<<<<<<< HEAD
-// Decodes JWT and returns expiry timestamp in ms
-function getTokenExpiry(token) {
+// ─── helpers ───────────────────────────────────────────────────────────────────
+const getTokenExpiry = (token) => {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp ? payload.exp * 1000 : null
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ? payload.exp * 1000 : null;
   } catch {
-    return null
+    return null;
   }
-=======
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+};
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
+// ─── Protected route — redirects to login if no token ─────────────────────────
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('accessToken');
+  return token ? children : <Navigate to="/login" />;
+};
+
+// ─── Sets up proactive token refresh, logs out on failure ─────────────────────
+function AuthProvider({ children }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let timer = null;
+
+    const scheduleRefresh = () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      const expiry = getTokenExpiry(token);
+      if (!expiry) return;
+
+      const delay = expiry - Date.now() - 60_000;
+
+      if (delay <= 0) {
+        handleRefresh();
+        return;
+      }
+
+      timer = setTimeout(handleRefresh, delay);
+    };
+
+    const handleRefresh = async () => {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        scheduleRefresh();
+      } else {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    };
+
+    scheduleRefresh();
+
+    return () => { if (timer) clearTimeout(timer); };
+  }, [navigate]);
+
+  return children;
+}
+
+// ─── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const handleToggleTheme = () => {
     setIsDarkMode((prev) => !prev);
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-  
-  return (
-    <div className={`flex ${isDarkMode ? 'bg-[#0d1117] text-[#e6edf3]' : 'bg-slate-100 text-slate-900'}`}>
-      <Sidebar isDarkMode={isDarkMode} />
-      <div className="flex-1 ml-[240px] flex flex-col min-h-screen">
-        <Header isDarkMode={isDarkMode} onToggleTheme={handleToggleTheme} />
-        <div className="p-6">
-          <Routes>
-            <Route path="/" element={<DashboardOverview isDarkMode={isDarkMode} />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/upload" element={<Upload />} />
-            <Route path="/quizzes" element={<Quizzes />} />
-            <Route path="/students" element={<Students/>} />
-            <Route path="/teachers" element={<Teachers/>} />
-            <Route path="/schools" element={ <Schools/>} />
-            <Route path="/requests" element={<RequestsPage/>} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Routes>
-        </div>
-      </div>
-    </div>
-  );
->>>>>>> 051d1e739beb516c1822988bad638845b494c2fb
-}
-
-// Protected route — redirects to login if no token
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('accessToken')
-  return token ? children : <Navigate to="/login" />
-}
-
-// Sets up proactive token refresh, logs out on failure
-function AuthProvider({ children }) {
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    let timer = null
-
-    const scheduleRefresh = () => {
-      const token = localStorage.getItem('accessToken')
-      if (!token) return
-
-      const expiry = getTokenExpiry(token)
-      if (!expiry) return
-
-      const delay = expiry - Date.now() - 60_000
-
-      if (delay <= 0) {
-        handleRefresh()
-        return
-      }
-
-      timer = setTimeout(handleRefresh, delay)
-    }
-
-    const handleRefresh = async () => {
-      const newToken = await refreshAccessToken()
-      if (newToken) {
-        scheduleRefresh()
-      } else {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
-        navigate('/login')
-      }
-    }
-
-    scheduleRefresh()
-
-    return () => { if (timer) clearTimeout(timer) }
-  }, [navigate])
-
-  return children
-}
-
-function App() {
   return (
     <AuthProvider>
       <Routes>
@@ -127,13 +94,13 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <div className="flex bg-[#0d1117] text-[#e6edf3]">
-                <Sidebar />
+              <div className={`flex ${isDarkMode ? 'bg-[#0d1117] text-[#e6edf3]' : 'bg-slate-100 text-slate-900'}`}>
+                <Sidebar isDarkMode={isDarkMode} />
                 <div className="flex-1 ml-[240px] flex flex-col min-h-screen">
-                  <Header />
+                  <Header isDarkMode={isDarkMode} onToggleTheme={handleToggleTheme} />
                   <div className="p-6">
                     <Routes>
-                      <Route path="/"          element={<DashboardOverview />} />
+                      <Route path="/"          element={<DashboardOverview isDarkMode={isDarkMode} />} />
                       <Route path="/resources" element={<Resources />} />
                       <Route path="/upload"    element={<Upload />} />
                       <Route path="/quizzes"   element={<Quizzes />} />
@@ -152,7 +119,7 @@ function App() {
         />
       </Routes>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
