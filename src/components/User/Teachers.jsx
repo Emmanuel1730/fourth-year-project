@@ -13,7 +13,7 @@ const Teachers = () => {
   const [schools, setSchools]           = useState([])
   const [formData, setFormData]         = useState({
     firstName: '', lastName: '', email: '', password: '',
-    libraryCardNumber: '', schoolId: '', bio: '', age: '',
+    dateOfBirth: '', schoolId: '', bio: '',
   })
   const [formLoading, setFormLoading] = useState(false)
   const [formError, setFormError]     = useState(null)
@@ -56,8 +56,7 @@ const Teachers = () => {
     e.preventDefault()
     setFormError(null)
     setFormSuccess(null)
-    if (!formData.firstName || !formData.lastName || !formData.email ||
-        !formData.password || !formData.libraryCardNumber) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       setFormError('Please fill in all required fields.')
       return
     }
@@ -69,7 +68,7 @@ const Teachers = () => {
         body: JSON.stringify({
           ...formData,
           role: 'TEACHER',
-          age: formData.age ? parseInt(formData.age) : undefined,
+          dateOfBirth: formData.dateOfBirth || undefined,
           schoolId: formData.schoolId || undefined,
         }),
       })
@@ -78,7 +77,7 @@ const Teachers = () => {
         throw new Error(data?.message ?? `Request failed with status ${res.status}`)
       }
       setFormSuccess('Teacher added successfully!')
-      setFormData({ firstName: '', lastName: '', email: '', password: '', libraryCardNumber: '', schoolId: '', bio: '', age: '' })
+      setFormData({ firstName: '', lastName: '', email: '', password: '', dateOfBirth: '', schoolId: '', bio: '' })
       await fetchTeachers()
       setTimeout(() => { setShowModal(false); setFormSuccess(null) }, 1500)
     } catch (err) {
@@ -226,15 +225,9 @@ const Teachers = () => {
                   <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Password *</label>
                   <input type="password" name="password" value={formData.password} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="••••••••" />
                 </div>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Library Card No. *</label>
-                    <input name="libraryCardNumber" value={formData.libraryCardNumber} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="LIB-T001" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Age</label>
-                    <input type="number" name="age" value={formData.age} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="30" />
-                  </div>
+                <div className="mb-3">
+                  <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Date of Birth</label>
+                  <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleFormChange} disabled={formLoading} style={inputStyle} />
                 </div>
                 <div className="mb-3">
                   <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>School</label>
