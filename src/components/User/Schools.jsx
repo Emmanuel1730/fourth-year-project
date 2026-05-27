@@ -1,56 +1,28 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/api";
 
-// ── Status badge helper ──────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const map = {
-    ACTIVE:          { label: "Active",          bg: "#1a3a2a", color: "#2ea043" },
-    PENDING_PAYMENT: { label: "Pending Payment", bg: "#3a2a1a", color: "#e3a525" },
-    SUSPENDED:       { label: "Suspended",       bg: "#3d1a1a", color: "#f85149" },
-  };
-  const s = map[status] ?? { label: status ?? "Unknown", bg: "#21262d", color: "#8b949e" };
-  return (
-    <span className="text-xs font-semibold px-2 py-0.5 rounded"
-      style={{ backgroundColor: s.bg, color: s.color }}>
-      {s.label}
-    </span>
-  );
-};
-
-// ── Input used in the edit modal ─────────────────────────────────────────────
 const inputCls =
   "w-full bg-[#0d1117] border border-[#21262d] text-[#e6edf3] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#2ea043] placeholder-[#6e7681] transition";
-
-// ────────────────────────────────────────────────────────────────────────────
 
 const Schools = () => {
   const [schools, setSchools]           = useState([]);
   const [loading, setLoading]           = useState(true);
   const [searchTerm, setSearchTerm]     = useState("");
   const [locationFilter, setLocationFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
-
-  // ── Detail side panel ────────────────────────────────────────────
-  const [selected, setSelected]         = useState(null); // school shown in panel
-
-  // ── Edit modal ───────────────────────────────────────────────────
-  const [editTarget, setEditTarget]     = useState(null); // school being edited
+  const [selected, setSelected]         = useState(null);
+  const [editTarget, setEditTarget]     = useState(null);
   const [editForm, setEditForm]         = useState({});
   const [editLoading, setEditLoading]   = useState(false);
   const [editError, setEditError]       = useState(null);
-
-  // ── Delete modal ─────────────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // ── Toast ────────────────────────────────────────────────────────
   const [toast, setToast] = useState(null);
+
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ── Fetch ────────────────────────────────────────────────────────
   const fetchSchools = async () => {
     try {
       setLoading(true);
@@ -65,9 +37,7 @@ const Schools = () => {
 
   useEffect(() => { fetchSchools(); }, []);
 
-  // ── Filters ──────────────────────────────────────────────────────
   const locations = ["All", ...new Set(schools.map(s => s.location).filter(Boolean))];
-  const statuses  = ["All", "ACTIVE", "PENDING_PAYMENT", "SUSPENDED"];
 
   const filtered = schools.filter(s => {
     const matchSearch =
@@ -75,13 +45,11 @@ const Schools = () => {
       s.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.phone?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchLocation = locationFilter === "All" || s.location === locationFilter;
-    const matchStatus   = statusFilter   === "All" || s.registrationStatus === statusFilter;
-    return matchSearch && matchLocation && matchStatus;
+    return matchSearch && matchLocation;
   });
 
-  // ── Edit handlers ─────────────────────────────────────────────────
   const openEdit = (school, e) => {
-    e.stopPropagation(); // don't open the detail panel
+    e.stopPropagation();
     setEditTarget(school);
     setEditForm({ name: school.name, location: school.location ?? "", phone: school.phone ?? "" });
     setEditError(null);
@@ -105,7 +73,6 @@ const Schools = () => {
     }
   };
 
-  // ── Delete handler ────────────────────────────────────────────────
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
@@ -122,7 +89,6 @@ const Schools = () => {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="p-6 min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans">
 
@@ -159,19 +125,15 @@ const Schools = () => {
           className="px-4 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-white text-sm focus:outline-none">
           {locations.map(l => <option key={l}>{l}</option>)}
         </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-4 py-2 rounded-lg bg-[#161b22] border border-[#21262d] text-white text-sm focus:outline-none">
-          {statuses.map(s => <option key={s} value={s}>{s === "All" ? "All Statuses" : s.replace("_", " ")}</option>)}
-        </select>
         <span className="self-center text-sm text-[#6e7681] ml-auto">
           {filtered.length} result{filtered.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* Main layout — table + optional detail panel side by side */}
+      {/* Main layout */}
       <div className={`flex gap-5 ${selected ? "items-start" : ""}`}>
 
-        {/* ── Table ───────────────────────────────────────────────── */}
+        {/* Table */}
         <div className="flex-1 overflow-x-auto rounded-xl bg-[#161b22] border border-[#21262d]">
           {loading ? (
             <div className="p-10 text-center text-[#8b949e]">Loading schools…</div>
@@ -179,18 +141,15 @@ const Schools = () => {
             <table className="min-w-full">
               <thead className="bg-[#1c2330] border-b border-[#21262d]">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Name</th>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Location</th>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Phone</th>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Members</th>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">Actions</th>
+                  {['Name', 'Location', 'Phone', 'Members', 'Actions'].map(h => (
+                    <th key={h} className="px-5 py-3 text-left text-xs text-[#8b949e] uppercase tracking-wider">{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-[#6e7681]">
+                    <td colSpan={5} className="px-5 py-10 text-center text-[#6e7681]">
                       No schools match your filters.
                     </td>
                   </tr>
@@ -199,9 +158,7 @@ const Schools = () => {
                     key={school.id}
                     onClick={() => setSelected(s => s?.id === school.id ? null : school)}
                     className={`border-b border-[#21262d] cursor-pointer transition ${
-                      selected?.id === school.id
-                        ? "bg-[#1a3a2a]"
-                        : "hover:bg-[#1c2330]"
+                      selected?.id === school.id ? "bg-[#1a3a2a]" : "hover:bg-[#1c2330]"
                     }`}
                   >
                     <td className="px-5 py-3.5 text-[#e6edf3] font-medium text-sm">{school.name}</td>
@@ -209,17 +166,12 @@ const Schools = () => {
                     <td className="px-5 py-3.5 text-[#8b949e] text-sm">{school.phone ?? "—"}</td>
                     <td className="px-5 py-3.5 text-[#8b949e] text-sm">{school.profiles?.length ?? 0}</td>
                     <td className="px-5 py-3.5">
-                      <StatusBadge status={school.registrationStatus} />
-                    </td>
-                    <td className="px-5 py-3.5">
                       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={e => openEdit(school, e)}
+                        <button onClick={e => openEdit(school, e)}
                           className="px-3 py-1 text-xs font-semibold rounded bg-[#21262d] border border-[#30363d] text-[#e6edf3] hover:border-[#2ea043] transition">
                           ✏️ Edit
                         </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); setDeleteTarget(school); }}
+                        <button onClick={e => { e.stopPropagation(); setDeleteTarget(school); }}
                           className="px-3 py-1 text-xs font-semibold rounded bg-[#3d1a1a] border border-[#f85149] text-[#f85149] hover:bg-[#5a1e1e] transition">
                           🗑 Delete
                         </button>
@@ -232,7 +184,7 @@ const Schools = () => {
           )}
         </div>
 
-        {/* ── Detail panel ────────────────────────────────────────── */}
+        {/* Detail panel */}
         {selected && (
           <div className="w-80 flex-shrink-0 bg-[#161b22] border border-[#21262d] rounded-xl p-5 sticky top-6">
             <div className="flex items-center justify-between mb-4">
@@ -241,18 +193,16 @@ const Schools = () => {
                 className="text-[#6e7681] hover:text-[#e6edf3] text-lg transition">✕</button>
             </div>
 
-            {/* School initial avatar */}
             <div className="w-14 h-14 rounded-xl bg-[#1a3a2a] border border-[#2ea043] flex items-center justify-center text-2xl font-bold text-[#2ea043] mb-4">
               {selected.name?.[0]?.toUpperCase() ?? "S"}
             </div>
 
-            <h3 className="text-base font-semibold text-[#e6edf3] mb-1">{selected.name}</h3>
-            <div className="mb-4"><StatusBadge status={selected.registrationStatus} /></div>
+            <h3 className="text-base font-semibold text-[#e6edf3] mb-4">{selected.name}</h3>
 
             <div className="space-y-3 text-sm">
-              <Row label="Location" value={selected.location ?? "—"} />
-              <Row label="Phone"    value={selected.phone    ?? "—"} />
-              <Row label="Members"  value={selected.profiles?.length ?? 0} />
+              <Row label="Location"  value={selected.location ?? "—"} />
+              <Row label="Phone"     value={selected.phone    ?? "—"} />
+              <Row label="Members"   value={selected.profiles?.length ?? 0} />
               <Row label="Resources" value={selected.resources?.length ?? 0} />
               {selected.registrationFeePaid && (
                 <Row label="Fee Paid" value={`MWK ${Number(selected.registrationFeePaid).toLocaleString()}`} />
@@ -266,13 +216,11 @@ const Schools = () => {
             </div>
 
             <div className="mt-5 flex gap-2">
-              <button
-                onClick={e => openEdit(selected, e)}
+              <button onClick={e => openEdit(selected, e)}
                 className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-[#21262d] border border-[#30363d] text-[#e6edf3] hover:border-[#2ea043] transition">
                 ✏️ Edit
               </button>
-              <button
-                onClick={() => setDeleteTarget(selected)}
+              <button onClick={() => setDeleteTarget(selected)}
                 className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-[#3d1a1a] border border-[#f85149] text-[#f85149] hover:bg-[#5a1e1e] transition">
                 🗑 Delete
               </button>
@@ -281,7 +229,7 @@ const Schools = () => {
         )}
       </div>
 
-      {/* ── Edit Modal ─────────────────────────────────────────────── */}
+      {/* Edit Modal */}
       {editTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-40 p-4">
           <div className="bg-[#161b22] border border-[#30363d] rounded-xl w-full max-w-md p-6 shadow-2xl">
@@ -332,7 +280,7 @@ const Schools = () => {
         </div>
       )}
 
-      {/* ── Delete Confirm Modal ───────────────────────────────────── */}
+      {/* Delete Confirm Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-40 p-4">
           <div className="bg-[#161b22] border border-[#f85149] rounded-xl w-full max-w-sm p-6 shadow-2xl text-center">
@@ -360,7 +308,6 @@ const Schools = () => {
   );
 };
 
-// ── Detail row helper ────────────────────────────────────────────────────────
 const Row = ({ label, value, mono = false }) => (
   <div className="flex justify-between items-start gap-2">
     <span className="text-[#6e7681] flex-shrink-0">{label}</span>

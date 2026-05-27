@@ -9,8 +9,7 @@ const authHeaders = () => ({
 })
 
 const EMPTY_FORM = {
-  firstName: '', lastName: '', email: '', password: '',
-  libraryCardNumber: '', bio: '', dateOfBirth: '',
+  firstName: '', lastName: '', email: '', password: '', bio: '',
 }
 
 const AdminsPage = () => {
@@ -41,7 +40,7 @@ const AdminsPage = () => {
 
   const handleSubmit = async () => {
     setFormError(null)
-    const required = ['firstName', 'lastName', 'email', 'password', 'libraryCardNumber']
+    const required = ['firstName', 'lastName', 'email', 'password']
     for (const f of required) {
       if (!form[f]) { setFormError(`${f} is required`); return }
     }
@@ -168,8 +167,6 @@ const AdminsPage = () => {
               { key: 'lastName',  label: 'Last Name',  placeholder: 'e.g. Phiri' },
               { key: 'email',     label: 'Email',      placeholder: 'admin@edulib.mw', type: 'email' },
               { key: 'password',  label: 'Password',   placeholder: '••••••••', type: 'password' },
-              { key: 'libraryCardNumber', label: 'Library Card No.', placeholder: 'LIB-001' },
-              { key: 'dateOfBirth', label: 'Date of Birth', placeholder: '', type: 'date' },
             ].map(({ key, label, placeholder, type = 'text' }) => (
               <div key={key}>
                 <label style={{ color: '#8b949e', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block', marginBottom: 6 }}>
@@ -240,9 +237,9 @@ const AdminsPage = () => {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total Admins', value: admins.length, color: '#388bfd' },
-          { label: 'Active',   value: admins.filter(a => a.isActive).length,  color: '#2ea043' },
-          { label: 'Inactive', value: admins.filter(a => !a.isActive).length, color: '#f0883e' },
+          { label: 'Total Admins', value: admins.length,                          color: '#388bfd' },
+          { label: 'Active',       value: admins.filter(a => a.isActive).length,  color: '#2ea043' },
+          { label: 'Inactive',     value: admins.filter(a => !a.isActive).length, color: '#f0883e' },
         ].map(s => (
           <div key={s.label} style={{
             flex: 1, background: '#161b22', border: '1px solid #21262d',
@@ -269,7 +266,7 @@ const AdminsPage = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #21262d' }}>
-                {['Admin', 'Email', 'Library Card', 'School', 'Joined', 'Status', 'Actions'].map(h => (
+                {['Admin', 'Email', 'Joined', 'Status', 'Actions'].map(h => (
                   <th key={h} style={{
                     padding: '10px 16px', textAlign: 'left',
                     color: '#6e7681', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em',
@@ -311,8 +308,6 @@ const AdminsPage = () => {
                     </div>
                   </td>
                   <td style={{ padding: '12px 16px', color: '#8b949e', fontSize: 13 }}>{admin.email}</td>
-                  <td style={{ padding: '12px 16px', color: '#8b949e', fontSize: 12, fontFamily: 'monospace' }}>{admin.libraryCardNumber}</td>
-                  <td style={{ padding: '12px 16px', color: '#8b949e', fontSize: 13 }}>{admin.school?.name ?? '—'}</td>
                   <td style={{ padding: '12px 16px', color: '#8b949e', fontSize: 13 }}>{formatDate(admin.joinDate)}</td>
                   <td style={{ padding: '12px 16px' }}>
                     <span style={{
@@ -340,7 +335,7 @@ const AdminsPage = () => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#6e7681', fontSize: 13 }}>
+                  <td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#6e7681', fontSize: 13 }}>
                     No admins found
                   </td>
                 </tr>

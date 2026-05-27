@@ -210,16 +210,16 @@ const Teachers = () => {
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>First Name *</label>
-                    <input name="firstName" value={formData.firstName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="James" />
+                    <input name="firstName" value={formData.firstName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="name" />
                   </div>
                   <div>
                     <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Last Name *</label>
-                    <input name="lastName" value={formData.lastName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="Mkandawire" />
+                    <input name="lastName" value={formData.lastName} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="surname" />
                   </div>
                 </div>
                 <div className="mb-3">
                   <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Email *</label>
-                  <input type="email" name="email" value={formData.email} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="james@school.mw" />
+                  <input type="email" name="email" value={formData.email} onChange={handleFormChange} disabled={formLoading} style={inputStyle} placeholder="email" />
                 </div>
                 <div className="mb-3">
                   <label className="text-xs font-medium uppercase tracking-wider mb-1 block" style={{ color: '#8b949e' }}>Password *</label>
