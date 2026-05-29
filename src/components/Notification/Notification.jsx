@@ -13,13 +13,13 @@ const TYPE_ICONS = {
 }
 
 const TYPE_COLORS = {
-  REQUEST_CREATED:   { bg: 'rgba(56,139,253,0.1)', border: '#388bfd' },
-  REQUEST_APPROVED:  { bg: 'rgba(46,160,67,0.1)',  border: '#2ea043' },
-  REQUEST_REJECTED:  { bg: 'rgba(218,54,51,0.1)',  border: '#da3633' },
-  QUIZ_CREATED:      { bg: 'rgba(240,136,62,0.1)', border: '#f0883e' },
-  USER_REGISTERED:   { bg: 'rgba(56,139,253,0.1)', border: '#388bfd' },
-  RESOURCE_UPLOADED: { bg: 'rgba(139,148,158,0.1)',border: '#6e7681' },
-  SYSTEM:            { bg: 'rgba(139,148,158,0.1)',border: '#6e7681' },
+  REQUEST_CREATED:   { bg: 'rgba(56,139,253,0.1)',  border: '#388bfd' },
+  REQUEST_APPROVED:  { bg: 'rgba(46,160,67,0.1)',   border: '#2ea043' },
+  REQUEST_REJECTED:  { bg: 'rgba(218,54,51,0.1)',   border: '#da3633' },
+  QUIZ_CREATED:      { bg: 'rgba(240,136,62,0.1)',  border: '#f0883e' },
+  USER_REGISTERED:   { bg: 'rgba(56,139,253,0.1)',  border: '#388bfd' },
+  RESOURCE_UPLOADED: { bg: 'rgba(139,148,158,0.1)', border: '#6e7681' },
+  SYSTEM:            { bg: 'rgba(139,148,158,0.1)', border: '#6e7681' },
 }
 
 const useNotifications = () => {
@@ -40,7 +40,7 @@ const useNotifications = () => {
         const data = await res.json()
         setUnreadCount(data.count ?? 0)
       }
-    } catch { /* silent */ }
+    } catch { }
   }
 
   const fetchNotifications = async () => {
@@ -51,9 +51,7 @@ const useNotifications = () => {
         const data = await res.json()
         setNotifications(Array.isArray(data) ? data : [])
       }
-    } catch { /* silent */ } finally {
-      setLoading(false)
-    }
+    } catch { } finally { setLoading(false) }
   }
 
   const markRead = async (id) => {
@@ -84,11 +82,9 @@ const timeAgo = (dateStr) => {
   if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
   if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  return `${d}d ago`
+  return `${Math.floor(h / 24)}d ago`
 }
 
-// ─── Badge (exported for header) ─────────────────────────────────────────────
 export const NotificationBadge = ({ count }) => {
   if (!count) return null
   return (
@@ -106,25 +102,38 @@ export const NotificationBadge = ({ count }) => {
   )
 }
 
-// ─── Main panel ───────────────────────────────────────────────────────────────
-const NotificationPanel = () => {
+const NotificationPanel = ({ isDarkMode = true }) => {
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
   const { notifications, unreadCount, loading, fetchNotifications, fetchUnreadCount, markRead, markAllRead, deleteNotif } = useNotifications()
 
-  // Poll unread count every 30s
+  const t = {
+    panelBg:    isDarkMode ? '#161b22'               : '#ffffff',
+    panelBorder:isDarkMode ? '#21262d'               : '#e2e8f0',
+    shadow:     isDarkMode ? '0 16px 48px rgba(0,0,0,.5)' : '0 16px 48px rgba(0,0,0,.12)',
+    headerText: isDarkMode ? '#e6edf3'               : '#0f172a',
+    mutedText:  isDarkMode ? '#8b949e'               : '#64748b',
+    dimText:    isDarkMode ? '#6e7681'               : '#94a3b8',
+    itemBg:     isDarkMode ? 'transparent'           : 'transparent',
+    itemUnread: isDarkMode ? 'rgba(56,139,253,0.04)' : 'rgba(56,139,253,0.06)',
+    itemHover:  isDarkMode ? '#1c2330'               : '#f8fafc',
+    bodyText:   isDarkMode ? '#e6edf3'               : '#1e293b',
+    msgText:    isDarkMode ? '#8b949e'               : '#475569',
+    btnBg:      isDarkMode ? '#1c2330'               : '#f1f5f9',
+    btnBorder:  isDarkMode ? '#21262d'               : '#e2e8f0',
+    activeBorder: open     ? '#388bfd'               : (isDarkMode ? '#21262d' : '#e2e8f0'),
+  }
+
   useEffect(() => {
     fetchUnreadCount()
     const id = setInterval(fetchUnreadCount, 30000)
     return () => clearInterval(id)
   }, [])
 
-  // Fetch full list when panel opens
   useEffect(() => {
     if (open) fetchNotifications()
   }, [open])
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false)
@@ -135,13 +144,12 @@ const NotificationPanel = () => {
 
   return (
     <div ref={panelRef} style={{ position: 'relative' }}>
-      {/* Bell button */}
       <button
         onClick={() => setOpen(o => !o)}
         style={{
           width: 36, height: 36,
-          background: open ? '#1c2330' : '#1c2330',
-          border: `1px solid ${open ? '#388bfd' : '#21262d'}`,
+          background: t.btnBg,
+          border: `1px solid ${t.activeBorder}`,
           borderRadius: 8,
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -153,25 +161,24 @@ const NotificationPanel = () => {
         <NotificationBadge count={unreadCount} />
       </button>
 
-      {/* Dropdown panel */}
       {open && (
         <div style={{
           position: 'absolute', top: 44, right: 0, zIndex: 1000,
           width: 360,
-          background: '#161b22',
-          border: '1px solid #21262d',
+          background: t.panelBg,
+          border: `1px solid ${t.panelBorder}`,
           borderRadius: 12,
-          boxShadow: '0 16px 48px rgba(0,0,0,.5)',
+          boxShadow: t.shadow,
           overflow: 'hidden',
         }}>
           {/* Header */}
           <div style={{
             padding: '14px 16px',
-            borderBottom: '1px solid #21262d',
+            borderBottom: `1px solid ${t.panelBorder}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <div>
-              <span style={{ color: '#e6edf3', fontSize: 14, fontWeight: 600 }}>Notifications</span>
+              <span style={{ color: t.headerText, fontSize: 14, fontWeight: 600 }}>Notifications</span>
               {unreadCount > 0 && (
                 <span style={{
                   marginLeft: 8, background: '#da3633', color: '#fff',
@@ -194,11 +201,9 @@ const NotificationPanel = () => {
           {/* List */}
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>
             {loading ? (
-              <div style={{ padding: 24, textAlign: 'center', color: '#6e7681', fontSize: 13 }}>
-                Loading…
-              </div>
+              <div style={{ padding: 24, textAlign: 'center', color: t.dimText, fontSize: 13 }}>Loading…</div>
             ) : notifications.length === 0 ? (
-              <div style={{ padding: 32, textAlign: 'center', color: '#6e7681', fontSize: 13 }}>
+              <div style={{ padding: 32, textAlign: 'center', color: t.dimText, fontSize: 13 }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
                 No notifications yet
               </div>
@@ -212,16 +217,15 @@ const NotificationPanel = () => {
                     onClick={() => !n.isRead && markRead(n.id)}
                     style={{
                       padding: '12px 16px',
-                      borderBottom: '1px solid #21262d',
+                      borderBottom: `1px solid ${t.panelBorder}`,
                       display: 'flex', gap: 12, alignItems: 'flex-start',
-                      background: n.isRead ? 'transparent' : 'rgba(56,139,253,0.04)',
+                      background: n.isRead ? t.itemBg : t.itemUnread,
                       cursor: n.isRead ? 'default' : 'pointer',
                       transition: 'background .15s',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#1c2330'}
-                    onMouseLeave={e => e.currentTarget.style.background = n.isRead ? 'transparent' : 'rgba(56,139,253,0.04)'}
+                    onMouseEnter={e => e.currentTarget.style.background = t.itemHover}
+                    onMouseLeave={e => e.currentTarget.style.background = n.isRead ? t.itemBg : t.itemUnread}
                   >
-                    {/* Icon */}
                     <div style={{
                       width: 34, height: 34, borderRadius: 8, flexShrink: 0,
                       background: color.bg,
@@ -232,20 +236,19 @@ const NotificationPanel = () => {
                       {icon}
                     </div>
 
-                    {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        color: '#e6edf3', fontSize: 13, fontWeight: n.isRead ? 400 : 600,
+                        color: t.bodyText, fontSize: 13, fontWeight: n.isRead ? 400 : 600,
                         marginBottom: 2,
                       }}>
                         {n.title}
                       </div>
                       {n.message && (
-                        <div style={{ color: '#8b949e', fontSize: 12, lineHeight: 1.4 }}>
+                        <div style={{ color: t.msgText, fontSize: 12, lineHeight: 1.4 }}>
                           {n.message}
                         </div>
                       )}
-                      <div style={{ color: '#6e7681', fontSize: 11, marginTop: 4 }}>
+                      <div style={{ color: t.dimText, fontSize: 11, marginTop: 4 }}>
                         {timeAgo(n.createdAt)}
                         {!n.isRead && (
                           <span style={{
@@ -257,14 +260,12 @@ const NotificationPanel = () => {
                       </div>
                     </div>
 
-                    {/* Delete */}
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteNotif(n.id) }}
                       style={{
-                        background: 'none', border: 'none', color: '#6e7681',
+                        background: 'none', border: 'none', color: t.dimText,
                         fontSize: 14, cursor: 'pointer', padding: '0 2px', flexShrink: 0,
                       }}
-                      title="Delete"
                     >
                       ×
                     </button>

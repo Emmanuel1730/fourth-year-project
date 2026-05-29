@@ -100,16 +100,16 @@ function App() {
                   <Header isDarkMode={isDarkMode} onToggleTheme={handleToggleTheme} />
                   <div className="p-6">
                     <Routes>
-                      <Route path="/"          element={<DashboardOverview isDarkMode={isDarkMode} />} />
-                      <Route path="/resources" element={<Resources />} />
-                      <Route path="/upload"    element={<Upload />} />
-                      <Route path="/quizzes"   element={<Quizzes />} />
-                      <Route path="/students"  element={<Students />} />
-                      <Route path="/teachers"  element={<Teachers />} />
-                      <Route path="/schools"   element={<Schools />} />
-                      <Route path="/requests"  element={<RequestsPage />} />
-                      <Route path="/settings"  element={<SettingsPage />} />
-                      <Route path="/admins"    element={<AdminsPage />} />
+                     <Route path="/"          element={<DashboardOverview isDarkMode={isDarkMode} />} />
+                      <Route path="/resources" element={<Resources isDarkMode={isDarkMode} />} />
+                      <Route path="/upload"    element={<Upload isDarkMode={isDarkMode} />} />
+                      <Route path="/quizzes"   element={<Quizzes isDarkMode={isDarkMode} />} />
+                      <Route path="/students"  element={<Students isDarkMode={isDarkMode} />} />
+                      <Route path="/teachers"  element={<Teachers isDarkMode={isDarkMode} />} />
+                      <Route path="/schools"   element={<Schools isDarkMode={isDarkMode} />} />
+                      <Route path="/requests"  element={<RequestsPage isDarkMode={isDarkMode} />} />
+                      <Route path="/settings"  element={<SettingsPage isDarkMode={isDarkMode} />} />
+                      <Route path="/admins"    element={<AdminsPage isDarkMode={isDarkMode} />} />
                     </Routes>
                   </div>
                 </div>

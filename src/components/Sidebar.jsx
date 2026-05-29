@@ -4,14 +4,26 @@ import logo from "../assets/logo.png";
 import ProfilePanel from "./Profile";
 import api from "../api/api";
 
-const Sidebar = () => {
+const Sidebar = ({ isDarkMode = true }) => {
   const [resourceCount, setResourceCount] = useState(null);
   const [pendingCount, setPendingCount]   = useState(null);
   const [profileOpen, setProfileOpen]     = useState(false);
   const [me, setMe]                       = useState(null);
 
+  const t = {
+    bg:          isDarkMode ? '#161b22' : '#ffffff',
+    border:      isDarkMode ? '#21262d' : '#e2e8f0',
+    text:        isDarkMode ? '#e6edf3' : '#0f172a',
+    muted:       isDarkMode ? '#8b949e' : '#64748b',
+    dim:         isDarkMode ? '#6e7681' : '#94a3b8',
+    logoSub:     isDarkMode ? '#6e7681' : '#94a3b8',
+    activeLink:  isDarkMode ? 'rgba(46,160,67,0.12)' : 'rgba(46,160,67,0.08)',
+    activeBorder:isDarkMode ? 'rgba(46,160,67,0.2)'  : 'rgba(46,160,67,0.25)',
+    hoverBg:     isDarkMode ? '#1c2330' : '#f1f5f9',
+    profileBtn:  isDarkMode ? '#21262d' : '#e2e8f0',
+  }
+
   useEffect(() => {
-    // Resources count
     api.get("/resources")
       .then(({ data }) => {
         if (data?.total !== undefined) setResourceCount(data.total);
@@ -19,7 +31,6 @@ const Sidebar = () => {
       })
       .catch(() => setResourceCount(null));
 
-    // Pending requests count
     api.get("/request")
       .then(({ data }) => {
         const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
@@ -27,7 +38,6 @@ const Sidebar = () => {
       })
       .catch(() => setPendingCount(null));
 
-    // Own profile (for avatar initials)
     api.get("/profiles/me")
       .then(({ data }) => setMe(data))
       .catch(() => {});
@@ -37,48 +47,53 @@ const Sidebar = () => {
     <NavLink
       to={to}
       end={end}
-      className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition border
-        ${
-          isActive
-            ? "bg-[rgba(46,160,67,0.12)] text-[#2ea043] border-[rgba(46,160,67,0.2)] font-medium"
-            : "text-[#8b949e] border-transparent hover:bg-[#1c2330] hover:text-[#e6edf3]"
-        }`
-      }
     >
-      <span className="w-5 text-center">{icon}</span>
-      {label}
-      {badge !== null && badge !== undefined && (
-        <span
-          className={`ml-auto text-[10px] px-2 py-[2px] rounded-full font-semibold text-white ${
-            badge.color === "green"
-              ? "bg-[#2ea043]"
-              : badge.color === "blue"
-              ? "bg-[#388bfd]"
-              : "bg-[#da3633]"
-          }`}
+      {({ isActive }) => (
+        <div
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition cursor-pointer"
+          style={{
+            backgroundColor: isActive ? t.activeLink  : 'transparent',
+            border:          isActive ? `1px solid ${t.activeBorder}` : '1px solid transparent',
+            color:           isActive ? '#2ea043' : t.muted,
+            fontWeight:      isActive ? 600 : 400,
+          }}
+          onMouseEnter={e => { if (!isActive) { e.currentTarget.style.backgroundColor = t.hoverBg; e.currentTarget.style.color = t.text; } }}
+          onMouseLeave={e => { if (!isActive) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = t.muted; } }}
         >
-          {badge.value}
-        </span>
+          <span className="w-5 text-center">{icon}</span>
+          {label}
+          {badge !== null && badge !== undefined && (
+            <span
+              className="ml-auto text-[10px] px-2 py-[2px] rounded-full font-semibold text-white"
+              style={{
+                backgroundColor: badge.color === 'green' ? '#2ea043' : badge.color === 'blue' ? '#388bfd' : '#da3633'
+              }}
+            >
+              {badge.value}
+            </span>
+          )}
+        </div>
       )}
     </NavLink>
   );
 
   const initials = me
-    ? `${me.firstName?.[0] ?? ""}${me.lastName?.[0] ?? ""}`.toUpperCase()
-    : "A";
+    ? `${me.firstName?.[0] ?? ''}${me.lastName?.[0] ?? ''}`.toUpperCase()
+    : 'A';
 
   return (
     <>
-      <div className="w-[240px] h-[100vh] fixed left-0 top-0 bg-[#161b22] border-r border-[#21262d] flex flex-col">
-
+      <div
+        className="w-[240px] h-[100vh] fixed left-0 top-0 flex flex-col"
+        style={{ backgroundColor: t.bg, borderRight: `1px solid ${t.border}` }}
+      >
         {/* LOGO */}
-        <div className="p-5 border-b border-[#21262d]">
+        <div className="p-5" style={{ borderBottom: `1px solid ${t.border}` }}>
           <div className="flex items-center gap-3">
             <img src={logo} alt="Logo" className="w-9 h-9 object-contain rounded-md" />
             <div>
-              <div className="text-[#e6edf3] font-serif text-lg">EduLib</div>
-              <div className="text-[10px] text-[#6e7681] uppercase tracking-wider">
+              <div className="font-serif text-lg" style={{ color: t.text }}>EduLib</div>
+              <div className="text-[10px] uppercase tracking-wider" style={{ color: t.logoSub }}>
                 Malawi · Admin
               </div>
             </div>
@@ -89,33 +104,30 @@ const Sidebar = () => {
         <div className="flex-1 overflow-y-auto min-h-0 px-3 py-4 space-y-2">
           {menuItem("/", "🏠", "Dashboard", null, true)}
 
-          <div className="text-[10px] text-[#6e7681] uppercase px-2 mt-4">Library</div>
-          {menuItem(
-            "/resources", "📄", "Resources",
-            resourceCount !== null ? { value: resourceCount, color: "blue" } : null
-          )}
+          <div className="text-[10px] uppercase px-2 mt-4" style={{ color: t.dim }}>Library</div>
+          {menuItem("/resources", "📄", "Resources", resourceCount !== null ? { value: resourceCount, color: "blue" } : null)}
           {menuItem("/upload", "⬆️", "Upload Materials")}
           {menuItem("/quizzes", "❓", "Quizzes & Exams")}
 
-          <div className="text-[10px] text-[#6e7681] uppercase px-2 mt-4">Users</div>
+          <div className="text-[10px] uppercase px-2 mt-4" style={{ color: t.dim }}>Users</div>
           {menuItem("/students", "🎓", "Students")}
           {menuItem("/teachers", "👩‍🏫", "Teachers")}
           {menuItem("/schools", "🏫", "Schools")}
           {menuItem("/admins", "🛡️", "Admins")}
 
-          <div className="text-[10px] text-[#6e7681] uppercase px-2 mt-4">System</div>
-          {menuItem(
-            "/requests", "🔔", "Requests",
-            pendingCount !== null ? { value: pendingCount, color: "red" } : null
-          )}
+          <div className="text-[10px] uppercase px-2 mt-4" style={{ color: t.dim }}>System</div>
+          {menuItem("/requests", "🔔", "Requests", pendingCount !== null ? { value: pendingCount, color: "red" } : null)}
           {menuItem("/settings", "⚙️", "Settings")}
         </div>
 
         {/* PROFILE */}
-        <div className="p-4 border-t border-[#21262d]">
+        <div className="p-4" style={{ borderTop: `1px solid ${t.border}` }}>
           <button
             onClick={() => setProfileOpen(true)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm border border-[#21262d] hover:bg-[#1c2330] hover:border-[#6e7681] transition text-[#8b949e] hover:text-[#e6edf3]"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition"
+            style={{ border: `1px solid ${t.border}`, color: t.muted, backgroundColor: 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = t.hoverBg; e.currentTarget.style.color = t.text; e.currentTarget.style.borderColor = t.dim; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = t.muted; e.currentTarget.style.borderColor = t.border; }}
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -125,16 +137,15 @@ const Sidebar = () => {
             </div>
             <div className="flex flex-col items-start min-w-0">
               <span className="text-[13px] font-medium truncate w-full">
-                {me ? `${me.firstName} ${me.lastName}` : "Admin"}
+                {me ? `${me.firstName} ${me.lastName}` : 'Admin'}
               </span>
-              <span className="text-[10px] text-[#6e7681]">View profile</span>
+              <span className="text-[10px]" style={{ color: t.dim }}>View profile</span>
             </div>
-            <span className="ml-auto text-[#6e7681] text-xs">→</span>
+            <span className="ml-auto text-xs" style={{ color: t.dim }}>→</span>
           </button>
         </div>
       </div>
 
-      {/* Profile slide-in panel */}
       <ProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
     </>
   );

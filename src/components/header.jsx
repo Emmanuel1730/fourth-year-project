@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import NotificationPanel from "././Notification/Notification";
+
 const Header = ({ isDarkMode, onToggleTheme }) => {
   const headerBg = isDarkMode ? 'bg-[#161b22] border-b border-[#21262d]' : 'bg-white border-b border-slate-200';
   const textColor = isDarkMode ? 'text-[#e6edf3]' : 'text-slate-900';
@@ -13,19 +15,15 @@ const Header = ({ isDarkMode, onToggleTheme }) => {
       <div className="flex items-center gap-3">
         <h1 className={`text-[20px] font-semibold ${textColor}`}>
           Dashboard
-          <span className={`text-[13px] ml-2 font-normal ${subTextColor}`}>
-            Overview
-          </span>
+          <span className={`text-[13px] ml-2 font-normal ${subTextColor}`}>Overview</span>
         </h1>
       </div>
 
-      {/* Search + Theme Toggle */}
       <div className="ml-auto flex items-center gap-3 min-w-[260px]">
         <button
           onClick={onToggleTheme}
           className={`w-[36px] h-[36px] rounded-md flex items-center justify-center ${buttonBg} transition hover:opacity-90`}
           aria-label="Switch theme"
-          title="Switch theme"
         >
           {isDarkMode ? '☀️' : '🌙'}
         </button>
@@ -36,7 +34,6 @@ const Header = ({ isDarkMode, onToggleTheme }) => {
         />
       </div>
 
-      {/* Add Resource */}
       <Link
         to="/upload"
         className="px-4 py-1 bg-[#2ea043] text-white rounded-md hover:opacity-90 transition"
@@ -44,10 +41,7 @@ const Header = ({ isDarkMode, onToggleTheme }) => {
         + Add Resource
       </Link>
 
-      {/* Notification */}
-      <button className={`w-[36px] h-[36px] rounded-md ${buttonBg}`}>
-        🔔
-      </button>
+      <NotificationPanel isDarkMode={isDarkMode} />
     </header>
   );
 };

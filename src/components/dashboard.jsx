@@ -222,6 +222,13 @@ const DashboardOverview = ({ isDarkMode }) => {
 
   const [toast, setToast] = useState({ message: '', visible: false });
 
+  // ── derived class name helpers (avoids nested template literals) ───────────
+  const skeletonBg   = isDarkMode ? 'bg-gray-700' : 'bg-slate-200';
+  const trackBg      = isDarkMode ? 'bg-gray-700' : 'bg-slate-200';
+  const editBtnClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-200'
+    : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700';
+
   const theme = isDarkMode
     ? {
         root:          'text-gray-200 bg-gray-900',
@@ -389,9 +396,9 @@ const DashboardOverview = ({ isDarkMode }) => {
               <div className="animate-pulse space-y-3">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="w-20 h-3 bg-gray-700 rounded" />
-                    <div className="flex-1 h-2 bg-gray-700 rounded" />
-                    <div className="w-10 h-3 bg-gray-700 rounded" />
+                    <div className={`w-20 h-3 ${skeletonBg} rounded`} />
+                    <div className={`flex-1 h-2 ${skeletonBg} rounded`} />
+                    <div className={`w-10 h-3 ${skeletonBg} rounded`} />
                   </div>
                 ))}
               </div>
@@ -401,7 +408,7 @@ const DashboardOverview = ({ isDarkMode }) => {
               downloadsData.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <span className={`w-20 text-sm ${theme.secondaryText} truncate`}>{item.subject}</span>
-                  <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
+                  <div className={`flex-1 h-2 rounded overflow-hidden ${trackBg}`}>
                     <div
                       className={`h-full ${item.color} rounded transition-all duration-500`}
                       style={{ width: `${item.percentage}%` }}
@@ -430,10 +437,10 @@ const DashboardOverview = ({ isDarkMode }) => {
                 <div className="space-y-3 animate-pulse">
                   {[...Array(4)].map((_, i) => (
                     <div key={i} className="flex gap-3">
-                      <div className="w-2 h-2 mt-1 rounded-full bg-gray-700 flex-shrink-0" />
+                      <div className={`w-2 h-2 mt-1 rounded-full ${skeletonBg} flex-shrink-0`} />
                       <div className="flex-1 space-y-1">
-                        <div className="h-3 bg-gray-700 rounded w-4/5" />
-                        <div className="h-2 bg-gray-700 rounded w-1/4" />
+                        <div className={`h-3 ${skeletonBg} rounded w-4/5`} />
+                        <div className={`h-2 ${skeletonBg} rounded w-1/4`} />
                       </div>
                     </div>
                   ))}
@@ -465,13 +472,13 @@ const DashboardOverview = ({ isDarkMode }) => {
             <div className="p-4">
               {loadingStorage ? (
                 <div className="animate-pulse space-y-3">
-                  <div className="h-3 bg-gray-700 rounded w-3/4" />
-                  <div className="h-2 bg-gray-700 rounded" />
+                  <div className={`h-3 ${skeletonBg} rounded w-3/4`} />
+                  <div className={`h-2 ${skeletonBg} rounded`} />
                   <div className="space-y-2 mt-4">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="flex justify-between">
-                        <div className="h-3 bg-gray-700 rounded w-1/4" />
-                        <div className="h-3 bg-gray-700 rounded w-1/5" />
+                        <div className={`h-3 ${skeletonBg} rounded w-1/4`} />
+                        <div className={`h-3 ${skeletonBg} rounded w-1/5`} />
                       </div>
                     ))}
                   </div>
@@ -491,7 +498,7 @@ const DashboardOverview = ({ isDarkMode }) => {
                     <span className={theme.mutedText}>Used</span>
                     <span className="font-mono">{storage.used} / {storage.total}</span>
                   </div>
-                  <div className="h-2 bg-gray-700 rounded overflow-hidden">
+                  <div className={`h-2 rounded overflow-hidden ${trackBg}`}>
                     <div
                       className={`h-full rounded transition-all duration-500 ${
                         storage.percentage > 85 ? 'bg-red-500' :
@@ -565,11 +572,7 @@ const DashboardOverview = ({ isDarkMode }) => {
                   <td className="p-3">
                     <button
                       onClick={() => showToast(`✏️ Editing "${resource.title}"`)}
-                      className={`px-2 py-1 text-xs rounded border ${
-                        isDarkMode
-                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-200'
-                          : 'bg-slate-100 border-slate-300 hover:bg-slate-200 text-slate-700'
-                      }`}
+                      className={`px-2 py-1 text-xs rounded border ${editBtnClass}`}
                     >
                       Edit
                     </button>

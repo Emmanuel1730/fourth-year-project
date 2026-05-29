@@ -1,14 +1,13 @@
- import React, { useState } from "react";
+import React, { useState } from "react";
 
-// 1. Data structure similar to your 'requests' array
 const settingsSections = [
   {
     category: "Access & Registration",
     description: "Control how users sign up and access the platform",
     items: [
-      { id: "reg", label: "Open Student Registration", sub: "Allow students to self-register without admin approval", enabled: true },
-      { id: "teach", label: "Teacher Approval Required", sub: "Require admin to approve teacher accounts", enabled: true },
-      { id: "school", label: "School Verification", sub: "Require verification before schools go live", enabled: true },
+      { id: "reg",    label: "Open Student Registration",  sub: "Allow students to self-register without admin approval",    enabled: true },
+      { id: "teach",  label: "Teacher Approval Required",  sub: "Require admin to approve teacher accounts",                 enabled: true },
+      { id: "school", label: "School Verification",        sub: "Require verification before schools go live",               enabled: true },
     ]
   },
   {
@@ -22,84 +21,108 @@ const settingsSections = [
     category: "Notifications",
     description: "Configure admin email alerts",
     items: [
-      { id: "alert_reg", label: "New Registration Alerts", sub: "Email when new users register", enabled: true },
-      { id: "alert_pend", label: "Upload Pending Alerts", sub: "Email when content awaits review", enabled: true },
+      { id: "alert_reg",  label: "New Registration Alerts", sub: "Email when new users register",         enabled: true },
+      { id: "alert_pend", label: "Upload Pending Alerts",   sub: "Email when content awaits review",      enabled: true },
     ]
   }
-];
+]
 
-// 2. Reusable Switch Component (Similar to your ActionButton)
-const ToggleSwitch = ({ isOn }) => {
+const ToggleSwitch = ({ isOn, onToggle, isDarkMode }) => (
+  <div
+    onClick={onToggle}
+    style={{
+      width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
+      background: isOn ? '#2ea043' : (isDarkMode ? '#21262d' : '#cbd5e1'),
+      display: 'flex', alignItems: 'center',
+      padding: '0 3px',
+      transition: 'background 0.2s',
+      flexShrink: 0,
+    }}
+  >
+    <div style={{
+      width: 18, height: 18, borderRadius: '50%', background: '#fff',
+      transform: isOn ? 'translateX(20px)' : 'translateX(0)',
+      transition: 'transform 0.2s',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    }} />
+  </div>
+)
+
+export default function SettingsPage({ isDarkMode = true }) {
+  const [sections, setSections] = useState(settingsSections)
+  const [saved, setSaved] = useState(false)
+
+  const t = {
+    bg:       isDarkMode ? '#0d1117' : '#f8fafc',
+    cardBg:   isDarkMode ? '#161b22' : '#ffffff',
+    border:   isDarkMode ? '#21262d' : '#e2e8f0',
+    divider:  isDarkMode ? '#21262d' : '#f1f5f9',
+    text:     isDarkMode ? '#e6edf3' : '#0f172a',
+    subText:  isDarkMode ? '#e2e8f0' : '#334155',
+    muted:    isDarkMode ? '#8b949e' : '#64748b',
+    dim:      isDarkMode ? '#6e7681' : '#94a3b8',
+    catText:  isDarkMode ? '#e6edf3' : '#1e293b',
+  }
+
+  const toggleItem = (sectionIdx, itemId) => {
+    setSections(prev => prev.map((section, i) =>
+      i !== sectionIdx ? section : {
+        ...section,
+        items: section.items.map(item => item.id === itemId ? { ...item, enabled: !item.enabled } : item)
+      }
+    ))
+    setSaved(false)
+  }
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
-    <div className={"w-12 h-6 flex items-center rounded-full p-1 cursor-pointer ${isOn ? 'bg-green-500' : 'bg-gray-600'}"}>
-      <div className={"bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out ${isOn ? 'translate-x-6' : ''}"}></div>
-    </div>
-  );
-};
-
-export default function SettingsPage() {
-  return (
-    <div className="bg-[#0B1220] min-h-screen text-white p-6 font-sans">
-      {/* Header - Identical style to Requests Page */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="text-gray-400 text-sm">Platform configuration</p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
-            <input
-              type="text"
-              placeholder="Search resources, users..."
-              className="bg-[#111827] text-sm pl-10 pr-4 py-2 rounded-lg outline-none w-64 border border-gray-800"
-            />
-          </div>
-          <button className="bg-green-500 px-4 py-2 rounded-lg font-medium text-sm">+ Add Resource</button>
-          <div className="bg-[#111827] p-2 rounded-lg relative border border-gray-800">
-            🔔 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </div>
-        </div>
+    <div style={{ padding: 24, minHeight: '100vh', background: t.bg }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ color: t.text, fontSize: 22, fontWeight: 700, margin: 0 }}>Settings</h1>
+        <p style={{ color: t.dim, fontSize: 13, marginTop: 4 }}>Platform configuration</p>
       </div>
 
-      {/* Settings Container - Matches your Table container style */}
-      <div className="bg-[#111827] rounded-2xl p-8 max-w-4xl">
-        <h2 className="text-lg font-semibold mb-6">Platform Settings</h2>
+      <div style={{ background: t.cardBg, border: `1px solid ${t.border}`, borderRadius: 16, padding: 32, maxWidth: 680 }}>
+        <h2 style={{ color: t.text, fontSize: 16, fontWeight: 600, margin: '0 0 24px' }}>Platform Settings</h2>
 
-        {settingsSections.map((section, idx) => (
-          <div key={idx} className="mb-10">
-            {/* Section Header */}
-            <div className="mb-6">
-              <h3 className="text-md font-medium text-white">{section.category}</h3>
-              <p className="text-gray-500 text-xs">{section.description}</p>
+        {sections.map((section, sIdx) => (
+          <div key={sIdx} style={{ marginBottom: sIdx < sections.length - 1 ? 32 : 0 }}>
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ color: t.catText, fontSize: 14, fontWeight: 600, margin: '0 0 4px' }}>{section.category}</h3>
+              <p style={{ color: t.dim, fontSize: 12, margin: 0 }}>{section.description}</p>
             </div>
 
-            {/* Settings Items - Mapping logic similar to your requests.map */}
-            <div className="space-y-6">
-              {section.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-200">{item.label}</span>
-                    <span className="text-xs text-gray-500 mt-1">{item.sub}</span>
- </div>
-                  <ToggleSwitch isOn={item.enabled} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {section.items.map(item => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <div style={{ color: t.subText, fontSize: 14, fontWeight: 500, marginBottom: 3 }}>{item.label}</div>
+                    <div style={{ color: t.muted, fontSize: 12 }}>{item.sub}</div>
+                  </div>
+                  <ToggleSwitch isOn={item.enabled} onToggle={() => toggleItem(sIdx, item.id)} isDarkMode={isDarkMode} />
                 </div>
               ))}
             </div>
-            
-            {/* Divider except for last section */}
-            {idx !== settingsSections.length - 1 && <div className="border-b border-gray-800 my-8"></div>}
+
+            {sIdx < sections.length - 1 && (
+              <div style={{ borderBottom: `1px solid ${t.divider}`, marginTop: 32 }} />
+            )}
           </div>
         ))}
 
-        {/* Footer Action - Matching your green button style */}
-        <div className="mt-8">
-          <button className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors">
-            Save Changes
+        <div style={{ marginTop: 32 }}>
+          <button onClick={handleSave}
+            style={{ background: saved ? '#2ea043' : '#2ea043', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s', opacity: 1 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+            {saved ? '✓ Saved!' : 'Save Changes'}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }
