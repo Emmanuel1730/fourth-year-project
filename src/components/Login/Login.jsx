@@ -3,6 +3,21 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
 import logo from "../../assets/logo.png";
 
+const EyeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+
 const Login = () => {
   const navigate = useNavigate();
 
@@ -37,9 +52,9 @@ const Login = () => {
 
       const { accessToken, refreshToken, user } = res.data;
 
-      // Enforce admin-only login
       if (user.role !== "ADMIN") {
         setErrorMsg("Access denied. Admins only.");
+        setLoading(false);
         return;
       }
 
@@ -62,7 +77,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4 relative">
-      {/* Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#2ea043]/5 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#388bfd]/5 rounded-full blur-3xl"></div>
@@ -71,7 +85,6 @@ const Login = () => {
       <div className="relative w-full max-w-md">
         <div className="bg-[#161b22] border border-[#21262d] rounded-2xl overflow-hidden shadow-2xl">
 
-          {/* Header */}
           <div className="px-8 pt-8 pb-6 bg-gradient-to-b from-[#1c2330] to-[#161b22] border-b border-[#21262d]">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 bg-[#2ea043] rounded-xl flex items-center justify-center overflow-hidden">
@@ -93,25 +106,22 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
 
-            {/* Error Message */}
             {errorMsg && (
               <div className="px-3 py-2 rounded-lg bg-[#3d1f1f] border border-[#f85149] text-[#f85149] text-sm text-center">
                 {errorMsg}
               </div>
             )}
 
-            {/* Email */}
             <div>
-              <label className="text-xs text-[#8b949e] uppercase mb-1 block">
+              <label className="text-xs text-[#8b949e] uppercase mb-1 block font-semibold">
                 Email Address
               </label>
               <input
                 type="email"
                 name="email"
-                value={formData.email}
+                value={formData.email} 
                 onChange={handleChange}
                 required
                 className="w-full bg-[#1c2330] border border-[#21262d] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-[#388bfd]"
@@ -119,9 +129,8 @@ const Login = () => {
               />
             </div>
 
-            {/* Password */}
             <div>
-              <label className="text-xs text-[#8b949e] uppercase mb-1 block">
+              <label className="text-xs text-[#8b949e] uppercase mb-1 block font-semibold">
                 Password
               </label>
               <div className="relative">
@@ -137,16 +146,16 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-2 text-gray-400"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6e7681] hover:text-[#8b949e] transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me */}
             <div className="flex justify-between text-sm">
-              <label className="flex items-center gap-2 text-[#8b949e]">
+              <label className="flex items-center gap-2 text-[#8b949e] font-semibold">
                 <input
                   type="checkbox"
                   name="rememberMe"
@@ -158,14 +167,13 @@ const Login = () => {
 
               <button
                 type="button"
-                className="text-[#388bfd]"
+                className="text-[#388bfd] font-semibold"
                 onClick={() => alert("Password reset coming soon")}
               >
                 Forgot password?
               </button>
             </div>
 
-            {/* Button */}
             <button
               type="submit"
               disabled={loading}
@@ -176,7 +184,6 @@ const Login = () => {
 
           </form>
 
-          {/* Footer */}
           <div className="px-8 py-4 bg-[#1c2330] border-t border-[#21262d] text-center text-xs text-[#6e7681]">
             © 2026 EduLib Malawi
           </div>
